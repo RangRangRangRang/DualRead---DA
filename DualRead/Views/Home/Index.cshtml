@@ -1,0 +1,58 @@
+@model OpenLibraryViewModel
+@{
+    ViewData["Title"] = "DualRead - Gateway";
+}
+
+<div class="landing-gateway">
+    <div class="gateway-card">
+        <h1 class="gateway-title">Hello, Welcome to DualRead</h1>
+        <p class="gateway-subtitle">Click button or drag &amp; drop to upload your EPUB, PDF, or Word document(s)</p>
+
+        <form id="gateway-upload-form" action="/Library/Upload" method="post" enctype="multipart/form-data" class="gateway-section">
+            @Html.AntiForgeryToken()
+            <label for="gateway-file-input" class="upload-dropzone-large" id="gateway-dropzone">
+                <div class="dropzone-icon">📁</div>
+                <div class="dropzone-text" id="gateway-dropzone-label">Drag &amp; drop .epub, .pdf, .docx files here or click to choose (multiple allowed)</div>
+                <input type="file" id="gateway-file-input" name="epubFiles" accept=".epub,.pdf,.docx" multiple hidden />
+            </label>
+
+            <ul class="upload-file-list" id="gateway-file-list" hidden></ul>
+
+            <button type="submit" id="gateway-btn-upload" class="btn-gateway btn-teal" disabled>Upload</button>
+        </form>
+
+        <div class="gateway-divider">
+            <span>OR</span>
+        </div>
+
+        <div class="gateway-section">
+            <a href="/Library" class="btn-gateway btn-outline w-100 text-center text-decoration-none">To Library &rarr;</a>
+        </div>
+    </div>
+</div>
+
+@if (TempData["UploadErrors"] is string uploadErrorsRaw && !string.IsNullOrEmpty(uploadErrorsRaw))
+{
+    <div class="gateway-upload-errors">
+        @foreach (var line in uploadErrorsRaw.Split('|', StringSplitOptions.RemoveEmptyEntries))
+        {
+            <p class="key-error">@line</p>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/upload.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initMultiFileUpload({
+                dropzoneEl: document.getElementById('gateway-dropzone'),
+                fileInput: document.getElementById('gateway-file-input'),
+                dropzoneLabelEl: document.getElementById('gateway-dropzone-label'),
+                listEl: document.getElementById('gateway-file-list'),
+                uploadBtn: document.getElementById('gateway-btn-upload'),
+                defaultLabelText: 'Drag & drop .epub, .pdf, .docx files here or click to choose (multiple allowed)'
+            });
+        });
+    </script>
+}

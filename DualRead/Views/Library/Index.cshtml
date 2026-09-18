@@ -1,0 +1,138 @@
+@model LibraryViewModel
+@{
+    ViewData["Title"] = "Library";
+}
+
+<div class="library-page">
+    <div class="library-header">
+        <div class="library-title-nav">
+            <h1 class="library-main-title">
+                <span>Thư viện</span>
+                <span class="library-title-sep">/</span>
+                <span class="library-sub-title">Tất cả sách (@Model.TotalCount sách)</span>
+            </h1>
+        </div>
+
+        <div class="library-header-actions">
+            <a id="btn-upload-header" class="lib-btn lib-btn-primary" asp-controller="Home" asp-action="Index">
+                <span>+ Tải sách mới</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["UploadSuccessCount"] is int successCount && successCount > 0)
+    {
+        <div class="alert alert-success">
+            <strong>Uploaded @successCount file(s) successfully:</strong>
+            @if (TempData["UploadSuccessFiles"] is string successFilesRaw && !string.IsNullOrEmpty(successFilesRaw))
+            {
+                <ul class="mb-0">
+                    @foreach (var line in successFilesRaw.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        <li>@line</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+
+    @if (TempData["UploadErrors"] is string uploadErrorsRaw && !string.IsNullOrEmpty(uploadErrorsRaw))
+    {
+        <div class="alert alert-danger">
+            <strong>Some files failed to upload:</strong>
+            <ul class="mb-0">
+                @foreach (var line in uploadErrorsRaw.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    <li>@line</li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (Model.Books.Count == 0)
+    {
+        <div class="library-empty-box">
+            <p class="text-secondary">Chưa có sách nào. Tải lên EPUB, PDF hoặc DOCX đầu tiên để bắt đầu.</p>
+        </div>
+    }
+    else
+    {
+        <div class="book-grid">
+            @foreach (var book in Model.Books)
+            {
+                var formatCode = book.Type.ToString().ToLowerInvariant();
+
+                <div class="book-card"
+                     data-book-id="@book.Id">
+                    <div class="book-cover-link">
+                        <div class="book-cover">
+                            @if (!string.IsNullOrEmpty(book.CoverImagePath))
+                            {
+                                <img src="@book.CoverImagePath" alt="@book.Title" />
+                            }
+                            else
+                            {
+                                <div class="book-cover-placeholder"></div>
+                            }
+                            <span class="book-type-badge format-badge-@formatCode">@book.Type</span>
+                        </div>
+                        <div class="book-title" title="@book.Title">@book.Title</div>
+                        <div class="book-author">@(string.IsNullOrEmpty(book.Author) ? "\u00A0" : book.Author)</div>
+                    </div>
+                    <div class="book-card-actions">
+                        <button type="button" class="book-card-action-btn book-read-btn" onclick="alertReaderComingSoon()">
+                            <span class="action-label">Đọc</span>
+                        </button>
+                        <button type="button" class="book-card-action-btn book-rename-btn"
+                                data-book-id="@book.Id"
+                                data-book-title="@book.Title"
+                                data-book-author="@(book.Author ?? "")"
+                                title="Đổi tên sách">
+                            <span class="action-label">Đổi tên</span>
+                        </button>
+                        <form asp-controller="Library" asp-action="Delete" method="post"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa sách này khỏi thư viện?');"
+                              class="book-card-action-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@book.Id" />
+                            <button type="submit" class="book-card-action-btn book-delete-btn" title="Xóa sách">
+                                <span class="action-label">Xóa</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div id="book-rename-modal-backdrop" class="lib-modal-backdrop" style="display:none;">
+        <div class="lib-modal-card" role="dialog" aria-modal="true" aria-labelledby="book-rename-modal-title">
+            <div class="lib-modal-header">
+                <h3 id="book-rename-modal-title" class="lib-modal-title">Đổi tên sách</h3>
+                <button type="button" class="lib-modal-close-btn" data-close-modal="book-rename-modal-backdrop">&times;</button>
+            </div>
+            <form id="book-rename-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="rename-book-id" value="" />
+                <div class="lib-modal-body">
+                    <div class="lib-form-group">
+                        <label for="rename-book-title-input" class="lib-form-label">Tên sách *</label>
+                        <input type="text" id="rename-book-title-input" class="lib-form-input" required maxlength="450" autocomplete="off" />
+                    </div>
+                    <div class="lib-form-group">
+                        <label for="rename-book-author-input" class="lib-form-label">Tác giả (tùy chọn)</label>
+                        <input type="text" id="rename-book-author-input" class="lib-form-input" maxlength="450" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="lib-modal-footer">
+                    <button type="button" class="lib-btn lib-btn-secondary" data-close-modal="book-rename-modal-backdrop">Hủy</button>
+                    <button type="submit" id="rename-book-save-btn" class="lib-btn lib-btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/library.js" asp-append-version="true"></script>
+}

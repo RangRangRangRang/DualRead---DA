@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "DualRead": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:13464;http://localhost:13465"
+    }
+  }
+}
