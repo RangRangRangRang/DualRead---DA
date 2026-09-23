@@ -1,0 +1,114 @@
+@model ReaderBundleViewModel
+@{
+    ViewData["Title"] = Model.Title;
+    var bootstrapJson = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        bookId = Model.BookId,
+        chapters = Model.Chapters.Select(c => new { id = c.Id, order = c.Order, title = c.Title }),
+        firstChapterId = Model.FirstChapterId
+    });
+}
+
+<div id="reader-app" class="reader-app" data-book-id="@Model.BookId">
+    <aside id="sidebar-left" class="sidebar sidebar-left">
+        <div class="sidebar-header">
+            <a class="sidebar-back" asp-controller="Library" asp-action="Index">&larr; Library</a>
+            <button type="button" class="sidebar-close-btn" aria-label="Close" data-close-sidebar>&times;</button>
+        </div>
+
+        <div class="sidebar-section">
+            <button type="button" class="sidebar-toggle" data-panel="panel-chapters">Chapters</button>
+            <div class="chapter-nav-buttons">
+                <button type="button" id="prev-chapter-btn" class="chapter-nav-btn" aria-label="Previous chapter" title="Previous chapter">
+                    <span aria-hidden="true">&#8249;</span> <span>Previous</span>
+                </button>
+                <button type="button" id="next-chapter-btn" class="chapter-nav-btn" aria-label="Next chapter" title="Next chapter">
+                    <span>Next</span> <span aria-hidden="true">&#8250;</span>
+                </button>
+            </div>
+            <ul id="panel-chapters" class="sidebar-panel sidebar-list open">
+                @foreach (var chapter in Model.Chapters)
+                {
+                    <li class="sidebar-list-item chapter-list-item @(chapter.Id == Model.FirstChapterId ? "active" : "")" data-chapter-id="@chapter.Id">
+                        @chapter.Title
+                    </li>
+                }
+            </ul>
+        </div>
+    </aside>
+
+    <main id="reader-center" class="reader-center">
+        <div class="reader-topbar">
+            <button type="button" id="sidebar-left-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Menu" aria-controls="sidebar-left" aria-expanded="false">
+                <span aria-hidden="true">&#9776;</span>
+            </button>
+            <div class="reader-book-title" id="reader-book-title">@Model.Title</div>
+            <button type="button" id="sidebar-right-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Settings" aria-controls="sidebar-right" aria-expanded="false">
+                <span aria-hidden="true">&#9881;</span>
+            </button>
+        </div>
+
+        @if (Model.FirstChapterId is null)
+        {
+            <div class="reader-empty-state">
+                <p>Không đọc được nội dung file EPUB này - file có thể bị hỏng hoặc không đúng chuẩn EPUB.</p>
+            </div>
+        }
+        else
+        {
+            <div class="page-frame" id="page-frame">
+                <button type="button" class="page-arrow page-arrow-left" id="page-arrow-left" aria-label="Previous page">&#8249;</button>
+                <div class="page-track reader-content-box" id="page-track">@Html.Raw(Model.FirstChapterHtml)</div>
+                <button type="button" class="page-arrow page-arrow-right" id="page-arrow-right" aria-label="Next page">&#8250;</button>
+            </div>
+            <div class="page-indicator" id="page-indicator">1 / 1</div>
+        }
+    </main>
+
+    <aside id="sidebar-right" class="sidebar sidebar-right">
+        <div class="sidebar-header">
+            <span class="sidebar-header-title">Settings</span>
+            <button type="button" class="sidebar-close-btn" aria-label="Close" data-close-sidebar>&times;</button>
+        </div>
+
+        <div class="sidebar-section">
+            <label class="settings-label">Dark Mode</label>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="setting-dark-mode" checked>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <label class="settings-label" for="setting-font">Font</label>
+            <select id="setting-font" class="form-select form-select-sm settings-input">
+                <option value="'Times New Roman', Times, serif" selected>Times New Roman</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Verdana, sans-serif">Verdana</option>
+                <option value="'Courier New', monospace">Courier New</option>
+            </select>
+        </div>
+
+        <div class="sidebar-section">
+            <label class="settings-label" for="setting-font-size"><span>Font Size</span> <span id="setting-font-size-val">18px</span></label>
+            <input type="range" min="12" max="32" step="1" id="setting-font-size" value="18" class="form-range">
+        </div>
+
+        <div class="sidebar-section">
+            <label class="settings-label" for="setting-line-height"><span>Line Height</span> <span id="setting-line-height-val">1.75</span></label>
+            <input type="range" min="1.2" max="2.4" step="0.1" id="setting-line-height" value="1.75" class="form-range">
+        </div>
+
+        <div class="sidebar-section">
+            <label class="settings-label" for="setting-letter-spacing"><span>Letter Spacing</span> <span id="setting-letter-spacing-val">0em</span></label>
+            <input type="range" min="0" max="0.3" step="0.01" id="setting-letter-spacing" value="0" class="form-range">
+        </div>
+    </aside>
+
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+</div>
+
+<script id="reader-bootstrap-data" type="application/json">@Html.Raw(bootstrapJson)</script>
+
+@section Scripts {
+    <script src="~/js/reader.js" asp-append-version="true"></script>
+}

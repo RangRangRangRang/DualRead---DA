@@ -33,4 +33,6 @@ public class Book
     public long FileSizeBytes { get; set; }
 
     public DateTime UploadedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
 }

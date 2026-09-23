@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# DualRead - file nguoi dung upload (khong day len Git)
+Uploads/
