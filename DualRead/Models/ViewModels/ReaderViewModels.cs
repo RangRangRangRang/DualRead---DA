@@ -9,8 +9,10 @@ public class ReaderBundleViewModel
     public string? Author { get; set; }
     public BookType BookType { get; set; }
     public List<ReaderChapterSummary> Chapters { get; set; } = new();
-    public Guid? FirstChapterId { get; set; }
-    public string FirstChapterHtml { get; set; } = string.Empty;
+    public Guid? LandingChapterId { get; set; }
+    public int LandingPage { get; set; }
+    public string LandingChapterHtml { get; set; } = string.Empty;
+    public List<BookmarkSummary> Bookmarks { get; set; } = new();
 }
 
 public class ReaderChapterSummary

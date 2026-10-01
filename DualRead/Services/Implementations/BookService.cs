@@ -1,6 +1,7 @@
 using DualRead.Data;
 using DualRead.Models;
 using DualRead.Services.Interfaces;
+using DualRead.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace DualRead.Services.Implementations;
@@ -11,12 +12,21 @@ public class BookService : IBookService
 
     private readonly AppDbContext _db;
     private readonly IEpubParsingService _epubParsingService;
+    private readonly IPdfParsingService _pdfParsingService;
+    private readonly IDocxParsingService _docxParsingService;
     private readonly string _uploadsRoot;
 
-    public BookService(AppDbContext db, IEpubParsingService epubParsingService, IWebHostEnvironment env)
+    public BookService(
+        AppDbContext db,
+        IEpubParsingService epubParsingService,
+        IPdfParsingService pdfParsingService,
+        IDocxParsingService docxParsingService,
+        IWebHostEnvironment env)
     {
         _db = db;
         _epubParsingService = epubParsingService;
+        _pdfParsingService = pdfParsingService;
+        _docxParsingService = docxParsingService;
         _uploadsRoot = Path.Combine(env.ContentRootPath, "Uploads");
         Directory.CreateDirectory(_uploadsRoot);
     }
@@ -82,12 +92,18 @@ public class BookService : IBookService
 
         var chapters = new List<Chapter>();
 
-        if (bookType == BookType.Epub)
+        try
         {
-            try
+            ParsedEpubResult? parsed = bookType switch
             {
-                var parsed = await _epubParsingService.ParseAsync(sourceFilePath);
+                BookType.Epub => await _epubParsingService.ParseAsync(sourceFilePath),
+                BookType.Pdf => await _pdfParsingService.ParseAsync(sourceFilePath),
+                BookType.Docx => await _docxParsingService.ParseAsync(sourceFilePath),
+                _ => null
+            };
 
+            if (parsed is not null)
+            {
                 book.Title = string.IsNullOrWhiteSpace(parsed.Title) ? book.Title : parsed.Title;
                 book.Author = parsed.Author;
 
@@ -107,10 +123,10 @@ public class BookService : IBookService
                     EpubItemHref = c.EpubItemHref
                 }).ToList();
             }
-            catch (Exception)
-            {
-                chapters = new List<Chapter>();
-            }
+        }
+        catch (Exception)
+        {
+            chapters = new List<Chapter>();
         }
 
         _db.Books.Add(book);

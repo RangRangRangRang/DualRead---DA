@@ -113,7 +113,3 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 });
-
-function alertReaderComingSoon() {
-    alert('The reader view is coming in a later milestone - this book was uploaded successfully!');
-}

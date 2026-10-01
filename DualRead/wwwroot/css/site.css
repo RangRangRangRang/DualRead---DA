@@ -1869,3 +1869,53 @@ body.theme-sepia .pdf-page-image {
     text-align: center;
     padding: 40px;
 }
+
+/* =========================================================================
+   MILESTONE-SLICE-ONLY RULES (Tuan 4): bookmark sidebar rows, topbar action
+   group, empty-state hint, and PDF page markers. The original stylesheet
+   has no equivalents for these because its bookmark list is rendered by
+   different markup.
+   ========================================================================= */
+.reader-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bookmark-list-item {
+    gap: 8px;
+}
+
+.bookmark-preview-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-list-empty {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    color: var(--eb-text-dim);
+    list-style: none;
+}
+
+.pdf-page-wrapper {
+    margin-bottom: 1.5em;
+}
+
+.pdf-page-marker {
+    text-align: center;
+    color: var(--eb-text-dim);
+    margin-bottom: 0.75em;
+}
+
+#bookmark-toggle-btn {
+    display: inline-flex;
+}
+
+#bookmark-toggle-btn.bookmarked {
+    color: var(--eb-teal);
+    border-color: var(--eb-teal);
+}

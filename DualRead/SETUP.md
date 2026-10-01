@@ -41,3 +41,17 @@ dotnet run
 ## Lưu ý khi deploy lên Render/Supabase/Neon
 
 `Program.cs` tự nhận biến môi trường `DATABASE_URL` (định dạng `postgres://user:pass@host:port/dbname`) và biến `PORT`, không cần sửa code khi deploy - chỉ cần set 2 biến môi trường đó trên nền tảng hosting.
+
+## Cập nhật Tuần 4 (PDF/DOCX, lưu tiến độ đọc, bookmark)
+
+Tuần 4 thêm 2 bảng mới (`Bookmarks`, `ReadingProgresses`) và 3 package mới (PdfPig, Mammoth.Core, DocumentFormat.OpenXml). Sau khi copy code mới vào repo, chạy từ thư mục `DualRead` (nơi có `DualRead.csproj`):
+
+```bash
+dotnet restore
+dotnet ef migrations add AddBookmarksAndReadingProgress
+dotnet run
+```
+
+Migration mới sẽ tự áp dụng vào database khi `dotnet run`. Không sửa/xóa migration `InitialCreate` cũ.
+
+Lưu ý: bookmark và tiến độ đọc hiện lưu theo sách và dùng chung cho mọi người xem (chưa có Recovery Key/tài khoản để tách riêng từng người).

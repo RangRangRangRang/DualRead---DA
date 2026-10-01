@@ -27,7 +27,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(configuredConnectionString));
 
 builder.Services.AddScoped<IEpubParsingService, EpubParsingService>();
+builder.Services.AddScoped<IPdfParsingService, PdfParsingService>();
+builder.Services.AddScoped<IDocxParsingService, DocxParsingService>();
 builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IBookmarkService, BookmarkService>();
+builder.Services.AddScoped<IReadingProgressService, ReadingProgressService>();
 
 var app = builder.Build();
 

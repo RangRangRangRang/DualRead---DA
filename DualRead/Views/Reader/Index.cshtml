@@ -5,7 +5,9 @@
     {
         bookId = Model.BookId,
         chapters = Model.Chapters.Select(c => new { id = c.Id, order = c.Order, title = c.Title }),
-        firstChapterId = Model.FirstChapterId
+        landingChapterId = Model.LandingChapterId,
+        landingPage = Model.LandingPage,
+        bookmarks = Model.Bookmarks.Select(b => new { id = b.Id, chapterId = b.ChapterId, page = b.Page, previewText = b.PreviewText })
     });
 }
 
@@ -29,9 +31,26 @@
             <ul id="panel-chapters" class="sidebar-panel sidebar-list open">
                 @foreach (var chapter in Model.Chapters)
                 {
-                    <li class="sidebar-list-item chapter-list-item @(chapter.Id == Model.FirstChapterId ? "active" : "")" data-chapter-id="@chapter.Id">
+                    <li class="sidebar-list-item chapter-list-item @(chapter.Id == Model.LandingChapterId ? "active" : "")" data-chapter-id="@chapter.Id">
                         @chapter.Title
                     </li>
+                }
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <button type="button" class="sidebar-toggle" data-panel="panel-bookmarks">Bookmarks</button>
+            <ul id="panel-bookmarks" class="sidebar-panel sidebar-list open">
+                @foreach (var bookmark in Model.Bookmarks)
+                {
+                    <li class="sidebar-list-item bookmark-list-item" data-bookmark-id="@bookmark.Id" data-chapter-id="@bookmark.ChapterId" data-page="@bookmark.Page">
+                        <span class="bookmark-preview-text">@(string.IsNullOrWhiteSpace(bookmark.PreviewText) ? $"Trang {bookmark.Page + 1}" : bookmark.PreviewText)</span>
+                        <button type="button" class="bookmark-delete" data-bookmark-delete-id="@bookmark.Id" aria-label="Delete bookmark">&times;</button>
+                    </li>
+                }
+                @if (Model.Bookmarks.Count == 0)
+                {
+                    <li class="sidebar-list-empty" id="bookmark-empty-hint">Chưa có bookmark nào. Nhấn phím B hoặc bấm nút đánh dấu để lưu trang này.</li>
                 }
             </ul>
         </div>
@@ -43,22 +62,27 @@
                 <span aria-hidden="true">&#9776;</span>
             </button>
             <div class="reader-book-title" id="reader-book-title">@Model.Title</div>
-            <button type="button" id="sidebar-right-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Settings" aria-controls="sidebar-right" aria-expanded="false">
-                <span aria-hidden="true">&#9881;</span>
-            </button>
+            <div class="reader-topbar-actions">
+                <button type="button" id="bookmark-toggle-btn" class="icon-toggle-btn" aria-label="Bookmark this page" title="Bookmark (B)">
+                    <span aria-hidden="true">&#9733;</span>
+                </button>
+                <button type="button" id="sidebar-right-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Settings" aria-controls="sidebar-right" aria-expanded="false">
+                    <span aria-hidden="true">&#9881;</span>
+                </button>
+            </div>
         </div>
 
-        @if (Model.FirstChapterId is null)
+        @if (Model.LandingChapterId is null)
         {
             <div class="reader-empty-state">
-                <p>Không đọc được nội dung file EPUB này - file có thể bị hỏng hoặc không đúng chuẩn EPUB.</p>
+                <p>Không đọc được nội dung file này - file có thể bị hỏng hoặc không đúng định dạng.</p>
             </div>
         }
         else
         {
             <div class="page-frame" id="page-frame">
                 <button type="button" class="page-arrow page-arrow-left" id="page-arrow-left" aria-label="Previous page">&#8249;</button>
-                <div class="page-track reader-content-box" id="page-track">@Html.Raw(Model.FirstChapterHtml)</div>
+                <div class="page-track reader-content-box" id="page-track">@Html.Raw(Model.LandingChapterHtml)</div>
                 <button type="button" class="page-arrow page-arrow-right" id="page-arrow-right" aria-label="Next page">&#8250;</button>
             </div>
             <div class="page-indicator" id="page-indicator">1 / 1</div>

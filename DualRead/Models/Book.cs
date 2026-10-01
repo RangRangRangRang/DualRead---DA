@@ -35,4 +35,8 @@ public class Book
     public DateTime UploadedAtUtc { get; set; } = DateTime.UtcNow;
 
     public ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
+
+    public ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
+
+    public ReadingProgress? ReadingProgress { get; set; }
 }

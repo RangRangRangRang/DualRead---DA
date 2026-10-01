@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     var bootstrapEl = document.getElementById('reader-bootstrap-data');
-    var bootstrap = bootstrapEl ? JSON.parse(bootstrapEl.textContent) : { bookId: null, chapters: [], firstChapterId: null };
+    var bootstrap = bootstrapEl
+        ? JSON.parse(bootstrapEl.textContent)
+        : { bookId: null, chapters: [], landingChapterId: null, landingPage: 0, bookmarks: [] };
 
     var readerApp = document.getElementById('reader-app');
     var pageFrame = document.getElementById('page-frame');
@@ -11,13 +13,17 @@ document.addEventListener('DOMContentLoaded', function () {
     var chapterListItems = document.querySelectorAll('.chapter-list-item');
     var prevChapterBtn = document.getElementById('prev-chapter-btn');
     var nextChapterBtn = document.getElementById('next-chapter-btn');
-    var readerBookTitle = document.getElementById('reader-book-title');
+    var bookmarkToggleBtn = document.getElementById('bookmark-toggle-btn');
+    var bookmarkList = document.getElementById('panel-bookmarks');
 
     var chapters = bootstrap.chapters || [];
-    var currentChapterId = bootstrap.firstChapterId;
+    var bookmarks = bootstrap.bookmarks || [];
+    var currentChapterId = bootstrap.landingChapterId;
     var currentPage = 0;
     var totalPages = 1;
     var pageStep = 0;
+    var pendingLandingPage = bootstrap.landingPage || 0;
+    var progressSaveTimeout = null;
 
     function isEditableTarget(target) {
         if (!target) return false;
@@ -56,15 +62,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updatePageIndicator() {
-        if (!pageIndicator) return;
-        pageIndicator.textContent = (currentPage + 1) + ' / ' + totalPages;
+        if (pageIndicator) {
+            pageIndicator.textContent = (currentPage + 1) + ' / ' + totalPages;
+        }
+        refreshBookmarkButtonState();
+    }
+
+    function onPositionChanged() {
+        updatePageIndicator();
+        scheduleProgressSave();
     }
 
     function goToNextPage() {
         if (currentPage < totalPages - 1) {
             currentPage++;
             applyPageTransform();
-            updatePageIndicator();
+            onPositionChanged();
         } else {
             goToAdjacentChapter(1);
         }
@@ -74,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (currentPage > 0) {
             currentPage--;
             applyPageTransform();
-            updatePageIndicator();
+            onPositionChanged();
         } else {
             goToAdjacentChapter(-1);
         }
@@ -107,10 +120,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function loadChapter(chapterId, landingPage) {
-        if (!bootstrap.bookId) return;
+    function loadChapter(chapterId, landing) {
+        if (!bootstrap.bookId) return Promise.resolve();
 
-        fetch('/Reader/' + bootstrap.bookId + '/Chapter/' + chapterId)
+        return fetch('/Reader/' + bootstrap.bookId + '/Chapter/' + chapterId)
             .then(function (res) {
                 if (!res.ok) throw new Error('Failed to load chapter');
                 return res.json();
@@ -123,16 +136,181 @@ document.addEventListener('DOMContentLoaded', function () {
                 currentPage = 0;
                 recalculatePagination();
 
-                if (landingPage === 'last') {
+                if (landing === 'last') {
                     currentPage = totalPages - 1;
-                    applyPageTransform();
-                    updatePageIndicator();
+                } else if (typeof landing === 'number') {
+                    currentPage = Math.min(Math.max(landing, 0), totalPages - 1);
                 }
+
+                applyPageTransform();
+                onPositionChanged();
             })
             .catch(function (err) {
                 console.error('Chapter load error:', err);
                 alert('Could not load this chapter. Please try again.');
             });
+    }
+
+    function scheduleProgressSave() {
+        if (!bootstrap.bookId || !currentChapterId) return;
+
+        clearTimeout(progressSaveTimeout);
+        progressSaveTimeout = setTimeout(saveProgressNow, 1500);
+    }
+
+    function saveProgressNow() {
+        if (!bootstrap.bookId || !currentChapterId) return;
+
+        fetch('/Reader/' + bootstrap.bookId + '/Progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chapterId: currentChapterId, page: currentPage }),
+            keepalive: true
+        }).catch(function (err) {
+            console.error('Progress save error:', err);
+        });
+    }
+
+    function findBookmarkAtCurrentPosition() {
+        for (var i = 0; i < bookmarks.length; i++) {
+            if (bookmarks[i].chapterId === currentChapterId && bookmarks[i].page === currentPage) {
+                return bookmarks[i];
+            }
+        }
+        return null;
+    }
+
+    function refreshBookmarkButtonState() {
+        if (!bookmarkToggleBtn) return;
+        if (findBookmarkAtCurrentPosition()) {
+            bookmarkToggleBtn.classList.add('bookmarked');
+        } else {
+            bookmarkToggleBtn.classList.remove('bookmarked');
+        }
+    }
+
+    function getCurrentPagePreviewText() {
+        if (!pageTrack) return '';
+        var text = (pageTrack.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!text) return '';
+
+        var approxCharsPerPage = Math.max(1, Math.floor(text.length / totalPages));
+        var start = Math.min(text.length - 1, currentPage * approxCharsPerPage);
+        return text.substr(start, 80).trim();
+    }
+
+    function appendBookmarkToSidebar(bookmark) {
+        if (!bookmarkList) return;
+
+        var hint = document.getElementById('bookmark-empty-hint');
+        if (hint) hint.remove();
+
+        var li = document.createElement('li');
+        li.className = 'sidebar-list-item bookmark-list-item';
+        li.setAttribute('data-bookmark-id', bookmark.id);
+        li.setAttribute('data-chapter-id', bookmark.chapterId || '');
+        li.setAttribute('data-page', bookmark.page);
+
+        var label = document.createElement('span');
+        label.className = 'bookmark-preview-text';
+        label.textContent = bookmark.previewText && bookmark.previewText.length > 0
+            ? bookmark.previewText
+            : 'Trang ' + (bookmark.page + 1);
+
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'bookmark-delete';
+        del.setAttribute('data-bookmark-delete-id', bookmark.id);
+        del.setAttribute('aria-label', 'Delete bookmark');
+        del.innerHTML = '&times;';
+
+        li.appendChild(label);
+        li.appendChild(del);
+        bookmarkList.insertBefore(li, bookmarkList.firstChild);
+    }
+
+    function addBookmarkAtCurrentPosition() {
+        if (!bootstrap.bookId || !currentChapterId) return;
+        if (findBookmarkAtCurrentPosition()) return;
+
+        fetch('/Reader/' + bootstrap.bookId + '/Bookmarks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chapterId: currentChapterId,
+                page: currentPage,
+                previewText: getCurrentPagePreviewText()
+            })
+        })
+            .then(function (res) {
+                if (!res.ok) throw new Error('Failed to add bookmark');
+                return res.json();
+            })
+            .then(function (created) {
+                bookmarks.unshift(created);
+                appendBookmarkToSidebar(created);
+                refreshBookmarkButtonState();
+            })
+            .catch(function (err) {
+                console.error('Bookmark add error:', err);
+                alert('Could not add bookmark. Please try again.');
+            });
+    }
+
+    function removeBookmark(bookmarkId, listItem) {
+        fetch('/Reader/' + bootstrap.bookId + '/Bookmarks/' + bookmarkId, { method: 'DELETE' })
+            .then(function (res) {
+                if (!res.ok) throw new Error('Failed to delete bookmark');
+
+                bookmarks = bookmarks.filter(function (b) { return b.id !== bookmarkId; });
+                if (listItem) listItem.remove();
+                refreshBookmarkButtonState();
+
+                if (bookmarks.length === 0 && bookmarkList && !document.getElementById('bookmark-empty-hint')) {
+                    var hint = document.createElement('li');
+                    hint.id = 'bookmark-empty-hint';
+                    hint.className = 'sidebar-list-empty';
+                    hint.textContent = 'Chưa có bookmark nào. Nhấn phím B hoặc bấm nút đánh dấu để lưu trang này.';
+                    bookmarkList.appendChild(hint);
+                }
+            })
+            .catch(function (err) {
+                console.error('Bookmark delete error:', err);
+                alert('Could not delete bookmark. Please try again.');
+            });
+    }
+
+    function jumpToBookmark(chapterId, page) {
+        if (!chapterId) return;
+
+        if (chapterId === currentChapterId) {
+            currentPage = Math.min(Math.max(page, 0), totalPages - 1);
+            applyPageTransform();
+            onPositionChanged();
+        } else {
+            loadChapter(chapterId, page);
+        }
+    }
+
+    if (bookmarkList) {
+        bookmarkList.addEventListener('click', function (e) {
+            var deleteBtn = e.target.closest('.bookmark-delete');
+            if (deleteBtn) {
+                e.stopPropagation();
+                var item = deleteBtn.closest('.bookmark-list-item');
+                removeBookmark(deleteBtn.getAttribute('data-bookmark-delete-id'), item);
+                return;
+            }
+
+            var row = e.target.closest('.bookmark-list-item');
+            if (row) {
+                jumpToBookmark(row.getAttribute('data-chapter-id'), parseInt(row.getAttribute('data-page'), 10) || 0);
+            }
+        });
+    }
+
+    if (bookmarkToggleBtn) {
+        bookmarkToggleBtn.addEventListener('click', addBookmarkAtCurrentPosition);
     }
 
     if (arrowRight) arrowRight.addEventListener('click', goToNextPage);
@@ -171,6 +349,10 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'ArrowDown':
                 e.preventDefault();
                 adjustFontSize(-1);
+                break;
+            case 'b':
+            case 'B':
+                addBookmarkAtCurrentPosition();
                 break;
             case 'f':
             case 'F':
@@ -296,7 +478,18 @@ document.addEventListener('DOMContentLoaded', function () {
         resizeTimeout = setTimeout(recalculatePagination, 150);
     });
 
+    window.addEventListener('beforeunload', function () {
+        clearTimeout(progressSaveTimeout);
+        saveProgressNow();
+    });
+
     if (pageFrame && pageTrack) {
         recalculatePagination();
+
+        if (pendingLandingPage > 0) {
+            currentPage = Math.min(pendingLandingPage, totalPages - 1);
+            applyPageTransform();
+            updatePageIndicator();
+        }
     }
 });

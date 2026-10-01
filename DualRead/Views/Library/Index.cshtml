@@ -49,11 +49,6 @@
         </div>
     }
 
-    @if (TempData["ReaderUnsupported"] is string readerUnsupportedMsg && !string.IsNullOrEmpty(readerUnsupportedMsg))
-    {
-        <div class="alert alert-warning">@readerUnsupportedMsg</div>
-    }
-
     @if (Model.Books.Count == 0)
     {
         <div class="library-empty-box">
@@ -85,18 +80,9 @@
                         <div class="book-author">@(string.IsNullOrEmpty(book.Author) ? "\u00A0" : book.Author)</div>
                     </div>
                     <div class="book-card-actions">
-                        @if (book.Type == BookType.Epub)
-                        {
-                            <a class="book-card-action-btn book-read-btn" asp-controller="Reader" asp-action="Index" asp-route-id="@book.Id">
-                                <span class="action-label">Đọc</span>
-                            </a>
-                        }
-                        else
-                        {
-                            <button type="button" class="book-card-action-btn book-read-btn" onclick="alertReaderComingSoon()">
-                                <span class="action-label">Đọc</span>
-                            </button>
-                        }
+                        <a class="book-card-action-btn book-read-btn" asp-controller="Reader" asp-action="Index" asp-route-id="@book.Id">
+                            <span class="action-label">Đọc</span>
+                        </a>
                         <button type="button" class="book-card-action-btn book-rename-btn"
                                 data-book-id="@book.Id"
                                 data-book-title="@book.Title"
