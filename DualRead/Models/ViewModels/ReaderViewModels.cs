@@ -13,6 +13,8 @@ public class ReaderBundleViewModel
     public int LandingPage { get; set; }
     public string LandingChapterHtml { get; set; } = string.Empty;
     public List<BookmarkSummary> Bookmarks { get; set; } = new();
+    public bool CanTranslate { get; set; }
+    public bool TranslationModeOn { get; set; }
 }
 
 public class ReaderChapterSummary

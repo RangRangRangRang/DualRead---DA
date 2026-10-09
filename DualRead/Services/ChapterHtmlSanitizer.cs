@@ -53,4 +53,26 @@ public static class ChapterHtmlSanitizer
         var bodyNode = doc.DocumentNode.SelectSingleNode("//body") ?? doc.DocumentNode;
         return bodyNode.InnerHtml;
     }
+
+    public static string IndexParagraphs(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+            return html;
+
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var paragraphs = doc.DocumentNode.SelectNodes("//p");
+        if (paragraphs is null)
+            return html;
+
+        var index = 0;
+        foreach (var p in paragraphs)
+        {
+            p.SetAttributeValue("data-p-index", index.ToString());
+            index++;
+        }
+
+        return doc.DocumentNode.InnerHtml;
+    }
 }

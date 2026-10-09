@@ -55,3 +55,34 @@ dotnet run
 Migration mới sẽ tự áp dụng vào database khi `dotnet run`. Không sửa/xóa migration `InitialCreate` cũ.
 
 Lưu ý: bookmark và tiến độ đọc hiện lưu theo sách và dùng chung cho mọi người xem (chưa có Recovery Key/tài khoản để tách riêng từng người).
+
+## Cập nhật Tuần 5 (Recovery Key, Sổ từ vựng, Tra từ nhanh, Reader responsive)
+
+Tuần 5 thêm 2 bảng mới (`RecoveryKeys`, `VocabularyItems`) và thêm cột bắt buộc `RecoveryKeyId` vào bảng `Books` đã có sẵn.
+
+**Quan trọng - đọc trước khi chạy migration:** vì `Books.RecoveryKeyId` là cột bắt buộc (NOT NULL) nhưng các sách đã test từ Tuần 1-4 trong database hiện tại chưa có giá trị này, migration mới sẽ lỗi nếu database đang có sẵn dữ liệu cũ. Cách đơn giản nhất cho giai đoạn demo/test: xóa sạch database cũ rồi tạo lại từ đầu, vì dữ liệu test không cần giữ.
+
+```bash
+# Xóa database cũ trong pgAdmin (chuột phải > Delete/Drop), tạo lại database rỗng cùng tên
+
+dotnet restore
+dotnet ef migrations add AddRecoveryKeyAndVocabulary
+dotnet run
+```
+
+Nếu muốn giữ lại dữ liệu test cũ thay vì xóa, phải tự sửa migration để gán một RecoveryKey mặc định cho các sách cũ - không khuyến khích ở giai đoạn này vì mất thời gian không cần thiết.
+
+Sau khi chạy lại, flow mới sẽ là: upload sách lần đầu tự động tạo Recovery Key mới (hiện banner xanh ở trang Gateway để lưu lại) → vào Thư viện sẽ thấy đúng sách của Recovery Key đó, không thấy sách của người khác → quay lại dùng key cũ bằng cách nhập vào ô "Nhập Recovery Key..." ở trang Gateway.
+
+## Cập nhật Tuần 6 (Chế độ Dịch)
+
+Tuần 6 thêm bảng `Translations` và cột `TranslationModeOn` vào bảng `ReadingProgresses`. Cả hai đều không gây xung đột với dữ liệu cũ (bảng mới, cột bool tự có giá trị mặc định false), nên không cần xóa database.
+
+```bash
+dotnet ef migrations add AddTranslations
+dotnet run
+```
+
+Cách dùng: mở một sách của chính thư viện mình (đang dùng đúng Recovery Key), bấm nút "Dịch" ở thanh trên hoặc nhấn phím T. Mỗi đoạn văn hiện cạnh một ô nhập, gõ bản dịch là tự lưu sau khoảng 0,8 giây. Nút "Xuất bản dịch" tải file .docx gồm các đoạn đã dịch theo từng chương. Bôi đen chữ ở cột nguyên văn vẫn dùng được Dịch nhanh.
+
+Giới hạn đã biết: ở chế độ Dịch, cột nguyên văn chỉ hiện các đoạn chữ và tiêu đề (ảnh trong chương bị ẩn), nội dung cuộn dọc thay vì lật trang, và bookmark bị tắt cho tới khi quay lại chế độ đọc.

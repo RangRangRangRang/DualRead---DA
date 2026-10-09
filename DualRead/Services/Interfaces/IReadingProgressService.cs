@@ -6,5 +6,5 @@ public interface IReadingProgressService
 {
     Task<ReadingProgress?> GetByBookIdAsync(Guid bookId);
 
-    Task SaveAsync(Guid bookId, Guid? chapterId, int page);
+    Task SaveAsync(Guid bookId, Guid? chapterId, int page, bool translationModeOn);
 }

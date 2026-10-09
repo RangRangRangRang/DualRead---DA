@@ -14,6 +14,7 @@ public class BookService : IBookService
     private readonly IEpubParsingService _epubParsingService;
     private readonly IPdfParsingService _pdfParsingService;
     private readonly IDocxParsingService _docxParsingService;
+    private readonly IRecoveryKeyService _recoveryKeyService;
     private readonly string _uploadsRoot;
 
     public BookService(
@@ -21,19 +22,22 @@ public class BookService : IBookService
         IEpubParsingService epubParsingService,
         IPdfParsingService pdfParsingService,
         IDocxParsingService docxParsingService,
+        IRecoveryKeyService recoveryKeyService,
         IWebHostEnvironment env)
     {
         _db = db;
         _epubParsingService = epubParsingService;
         _pdfParsingService = pdfParsingService;
         _docxParsingService = docxParsingService;
+        _recoveryKeyService = recoveryKeyService;
         _uploadsRoot = Path.Combine(env.ContentRootPath, "Uploads");
         Directory.CreateDirectory(_uploadsRoot);
     }
 
-    public async Task<List<Book>> GetLibraryAsync()
+    public async Task<List<Book>> GetLibraryAsync(Guid recoveryKeyId)
     {
         return await _db.Books
+            .Where(b => b.RecoveryKeyId == recoveryKeyId)
             .OrderByDescending(b => b.UploadedAtUtc)
             .AsNoTracking()
             .ToListAsync();
@@ -53,12 +57,23 @@ public class BookService : IBookService
             .ToListAsync();
     }
 
-    public async Task<Book> UploadBookAsync(string originalFileName, long fileSizeBytes, Stream fileContent)
+    public async Task<(Book Book, RecoveryKey RecoveryKey)> UploadBookAsync(Guid? recoveryKeyId, string originalFileName, long fileSizeBytes, Stream fileContent)
     {
         var extension = Path.GetExtension(originalFileName);
         if (!SupportedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("Unsupported file type - only .epub, .pdf, and .docx are supported.");
+        }
+
+        RecoveryKey recoveryKey;
+        if (recoveryKeyId is null)
+        {
+            recoveryKey = await _recoveryKeyService.GenerateNewKeyAsync();
+        }
+        else
+        {
+            recoveryKey = await _recoveryKeyService.GetByIdAsync(recoveryKeyId.Value)
+                ?? await _recoveryKeyService.GenerateNewKeyAsync();
         }
 
         var bookId = Guid.NewGuid();
@@ -81,6 +96,7 @@ public class BookService : IBookService
         var book = new Book
         {
             Id = bookId,
+            RecoveryKeyId = recoveryKey.Id,
             Type = bookType,
             Title = Path.GetFileNameWithoutExtension(originalFileName),
             Author = null,
@@ -136,7 +152,7 @@ public class BookService : IBookService
         }
         await _db.SaveChangesAsync();
 
-        return book;
+        return (book, recoveryKey);
     }
 
     public async Task<Book?> RenameBookAsync(Guid bookId, string title, string? author)
@@ -155,9 +171,9 @@ public class BookService : IBookService
         return book;
     }
 
-    public async Task<bool> DeleteBookAsync(Guid bookId)
+    public async Task<bool> DeleteBookAsync(Guid recoveryKeyId, Guid bookId)
     {
-        var book = await _db.Books.FirstOrDefaultAsync(b => b.Id == bookId);
+        var book = await _db.Books.FirstOrDefaultAsync(b => b.Id == bookId && b.RecoveryKeyId == recoveryKeyId);
         if (book is null)
         {
             return false;

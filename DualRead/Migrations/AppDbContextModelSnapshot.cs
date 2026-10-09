@@ -44,6 +44,9 @@ namespace DualRead.Migrations
                     b.Property<long>("FileSizeBytes")
                         .HasColumnType("bigint");
 
+                    b.Property<Guid>("RecoveryKeyId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(450)
@@ -56,6 +59,8 @@ namespace DualRead.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RecoveryKeyId");
 
                     b.ToTable("Books");
                 });
@@ -131,12 +136,129 @@ namespace DualRead.Migrations
                     b.Property<int>("CurrentPage")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("TranslationModeOn")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("BookId");
 
                     b.ToTable("ReadingProgresses");
+                });
+
+            modelBuilder.Entity("DualRead.Models.RecoveryKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LastAccessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("RecoveryKeys");
+                });
+
+            modelBuilder.Entity("DualRead.Models.Translation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChapterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ParagraphIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TranslatedText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("ChapterId", "ParagraphIndex")
+                        .IsUnique();
+
+                    b.ToTable("Translations");
+                });
+
+            modelBuilder.Entity("DualRead.Models.VocabularyItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BookId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BookTitle")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid?>("ChapterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChapterTitle")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ContextText")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OriginalText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RecoveryKeyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TranslatedText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("RecoveryKeyId");
+
+                    b.ToTable("VocabularyItems");
+                });
+
+            modelBuilder.Entity("DualRead.Models.Book", b =>
+                {
+                    b.HasOne("DualRead.Models.RecoveryKey", "RecoveryKey")
+                        .WithMany("Books")
+                        .HasForeignKey("RecoveryKeyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RecoveryKey");
                 });
 
             modelBuilder.Entity("DualRead.Models.Bookmark", b =>
@@ -179,6 +301,43 @@ namespace DualRead.Migrations
                     b.Navigation("Book");
                 });
 
+            modelBuilder.Entity("DualRead.Models.Translation", b =>
+                {
+                    b.HasOne("DualRead.Models.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DualRead.Models.Chapter", "Chapter")
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("Chapter");
+                });
+
+            modelBuilder.Entity("DualRead.Models.VocabularyItem", b =>
+                {
+                    b.HasOne("DualRead.Models.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DualRead.Models.RecoveryKey", "RecoveryKey")
+                        .WithMany()
+                        .HasForeignKey("RecoveryKeyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("RecoveryKey");
+                });
+
             modelBuilder.Entity("DualRead.Models.Book", b =>
                 {
                     b.Navigation("Bookmarks");
@@ -186,6 +345,11 @@ namespace DualRead.Migrations
                     b.Navigation("Chapters");
 
                     b.Navigation("ReadingProgress");
+                });
+
+            modelBuilder.Entity("DualRead.Models.RecoveryKey", b =>
+                {
+                    b.Navigation("Books");
                 });
 #pragma warning restore 612, 618
         }

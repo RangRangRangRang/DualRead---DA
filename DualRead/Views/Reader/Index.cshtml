@@ -7,6 +7,8 @@
         chapters = Model.Chapters.Select(c => new { id = c.Id, order = c.Order, title = c.Title }),
         landingChapterId = Model.LandingChapterId,
         landingPage = Model.LandingPage,
+        canTranslate = Model.CanTranslate,
+        translationModeOn = Model.TranslationModeOn,
         bookmarks = Model.Bookmarks.Select(b => new { id = b.Id, chapterId = b.ChapterId, page = b.Page, previewText = b.PreviewText })
     });
 }
@@ -63,6 +65,18 @@
             </button>
             <div class="reader-book-title" id="reader-book-title">@Model.Title</div>
             <div class="reader-topbar-actions">
+                @if (Model.CanTranslate)
+                {
+                    <span id="translation-save-status" class="translation-save-status" hidden></span>
+                    <button type="button" id="translate-toggle" class="translate-toggle-btn" aria-pressed="false" title="Dịch (T)">
+                        <span aria-hidden="true">&#127760;</span>
+                        <span class="translate-toggle-label">Dịch</span>
+                    </button>
+                    <a id="export-translation-btn" class="export-translation-btn" href="@Url.Action("ExportTranslation", "Reader", new { id = Model.BookId })" title="Xuất bản dịch (.docx)">
+                        <span aria-hidden="true">&#128190;</span>
+                        <span class="export-translation-label">Xuất bản dịch</span>
+                    </a>
+                }
                 <button type="button" id="bookmark-toggle-btn" class="icon-toggle-btn" aria-label="Bookmark this page" title="Bookmark (B)">
                     <span aria-hidden="true">&#9733;</span>
                 </button>
@@ -86,6 +100,17 @@
                 <button type="button" class="page-arrow page-arrow-right" id="page-arrow-right" aria-label="Next page">&#8250;</button>
             </div>
             <div class="page-indicator" id="page-indicator">1 / 1</div>
+
+            @if (Model.CanTranslate)
+            {
+                <div class="translation-view" id="translation-view" hidden>
+                    <div class="translation-grid" id="translation-grid"></div>
+                    <div class="translation-view-nav">
+                        <button type="button" id="tr-prev-chapter-btn" class="chapter-nav-btn">&#8249; Chương trước</button>
+                        <button type="button" id="tr-next-chapter-btn" class="chapter-nav-btn">Chương sau &#8250;</button>
+                    </div>
+                </div>
+            }
         }
     </main>
 
@@ -135,4 +160,5 @@
 
 @section Scripts {
     <script src="~/js/reader.js" asp-append-version="true"></script>
+    <script src="~/js/reader-quick-translate.js" asp-append-version="true"></script>
 }

@@ -19,7 +19,7 @@ public class ReadingProgressService : IReadingProgressService
         return await _db.ReadingProgresses.AsNoTracking().FirstOrDefaultAsync(rp => rp.BookId == bookId);
     }
 
-    public async Task SaveAsync(Guid bookId, Guid? chapterId, int page)
+    public async Task SaveAsync(Guid bookId, Guid? chapterId, int page, bool translationModeOn)
     {
         var existing = await _db.ReadingProgresses.FirstOrDefaultAsync(rp => rp.BookId == bookId);
 
@@ -30,6 +30,7 @@ public class ReadingProgressService : IReadingProgressService
                 BookId = bookId,
                 CurrentChapterId = chapterId,
                 CurrentPage = page,
+                TranslationModeOn = translationModeOn,
                 UpdatedAtUtc = DateTime.UtcNow
             });
         }
@@ -37,6 +38,7 @@ public class ReadingProgressService : IReadingProgressService
         {
             existing.CurrentChapterId = chapterId;
             existing.CurrentPage = page;
+            existing.TranslationModeOn = translationModeOn;
             existing.UpdatedAtUtc = DateTime.UtcNow;
         }
 

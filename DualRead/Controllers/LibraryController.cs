@@ -10,17 +10,26 @@ public class LibraryController : Controller
     private static readonly string[] SupportedExtensions = { ".epub", ".pdf", ".docx" };
 
     private readonly IBookService _bookService;
+    private readonly ICurrentRecoveryKeyAccessor _currentRecoveryKeyAccessor;
 
-    public LibraryController(IBookService bookService)
+    public LibraryController(IBookService bookService, ICurrentRecoveryKeyAccessor currentRecoveryKeyAccessor)
     {
         _bookService = bookService;
+        _currentRecoveryKeyAccessor = currentRecoveryKeyAccessor;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var books = await _bookService.GetLibraryAsync();
+        var recoveryKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
+        if (recoveryKey is null)
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        var books = await _bookService.GetLibraryAsync(recoveryKey.Id);
         var viewModel = new LibraryViewModel { Books = books };
+        ViewBag.RecoveryKeyCode = recoveryKey.Code;
         return View(viewModel);
     }
 
@@ -34,6 +43,10 @@ public class LibraryController : Controller
             TempData["UploadErrors"] = "Choose at least one .epub, .pdf, or .docx file to upload.";
             return RedirectToAction("Index", "Home");
         }
+
+        var existingKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
+        Guid? activeRecoveryKeyId = existingKey?.Id;
+        string? newlyCreatedKeyCode = null;
 
         var succeeded = new List<string>();
         var failed = new List<string>();
@@ -66,13 +79,30 @@ public class LibraryController : Controller
             try
             {
                 await using var stream = file.OpenReadStream();
-                await _bookService.UploadBookAsync(file.FileName, file.Length, stream);
+                var (_, recoveryKey) = await _bookService.UploadBookAsync(activeRecoveryKeyId, file.FileName, file.Length, stream);
+
+                if (activeRecoveryKeyId is null)
+                {
+                    activeRecoveryKeyId = recoveryKey.Id;
+                    newlyCreatedKeyCode = recoveryKey.Code;
+                }
+
                 succeeded.Add(file.FileName);
             }
             catch (Exception ex)
             {
                 failed.Add($"{file.FileName}: {ex.Message}");
             }
+        }
+
+        if (activeRecoveryKeyId.HasValue)
+        {
+            _currentRecoveryKeyAccessor.SetActiveKeyCookie(activeRecoveryKeyId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(newlyCreatedKeyCode))
+        {
+            TempData["JustCreatedKey"] = newlyCreatedKeyCode;
         }
 
         if (succeeded.Count > 0)
@@ -110,7 +140,13 @@ public class LibraryController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await _bookService.DeleteBookAsync(id);
+        var recoveryKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
+        if (recoveryKey is null)
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        await _bookService.DeleteBookAsync(recoveryKey.Id, id);
         return RedirectToAction("Index", "Library");
     }
 }

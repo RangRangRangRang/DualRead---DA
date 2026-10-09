@@ -14,6 +14,11 @@ public class Book
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    [Required]
+    public Guid RecoveryKeyId { get; set; }
+
+    public RecoveryKey? RecoveryKey { get; set; }
+
     public BookType Type { get; set; } = BookType.Epub;
 
     [Required]

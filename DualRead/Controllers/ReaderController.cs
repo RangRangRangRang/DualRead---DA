@@ -9,12 +9,18 @@ namespace DualRead.Controllers;
 [Route("Reader")]
 public class ReaderController : Controller
 {
+    private const int MaxTranslationLength = 20000;
+    private const string DocxContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
     private readonly IBookService _bookService;
     private readonly IEpubParsingService _epubParsingService;
     private readonly IPdfParsingService _pdfParsingService;
     private readonly IDocxParsingService _docxParsingService;
     private readonly IReadingProgressService _readingProgressService;
     private readonly IBookmarkService _bookmarkService;
+    private readonly ITranslationService _translationService;
+    private readonly ITranslationExportService _translationExportService;
+    private readonly ICurrentRecoveryKeyAccessor _currentRecoveryKeyAccessor;
 
     public ReaderController(
         IBookService bookService,
@@ -22,7 +28,10 @@ public class ReaderController : Controller
         IPdfParsingService pdfParsingService,
         IDocxParsingService docxParsingService,
         IReadingProgressService readingProgressService,
-        IBookmarkService bookmarkService)
+        IBookmarkService bookmarkService,
+        ITranslationService translationService,
+        ITranslationExportService translationExportService,
+        ICurrentRecoveryKeyAccessor currentRecoveryKeyAccessor)
     {
         _bookService = bookService;
         _epubParsingService = epubParsingService;
@@ -30,6 +39,9 @@ public class ReaderController : Controller
         _docxParsingService = docxParsingService;
         _readingProgressService = readingProgressService;
         _bookmarkService = bookmarkService;
+        _translationService = translationService;
+        _translationExportService = translationExportService;
+        _currentRecoveryKeyAccessor = currentRecoveryKeyAccessor;
     }
 
     [HttpGet("{id:guid}")]
@@ -41,6 +53,9 @@ public class ReaderController : Controller
         {
             return NotFound();
         }
+
+        var recoveryKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
+        var canTranslate = recoveryKey is not null && recoveryKey.Id == book.RecoveryKeyId;
 
         var chapters = await _bookService.GetChaptersAsync(id);
         var progress = await _readingProgressService.GetByBookIdAsync(id);
@@ -58,7 +73,9 @@ public class ReaderController : Controller
                 Order = c.Order,
                 Title = c.Title
             }).ToList(),
-            Bookmarks = bookmarks.Select(ToSummary).ToList()
+            Bookmarks = bookmarks.Select(ToSummary).ToList(),
+            CanTranslate = canTranslate,
+            TranslationModeOn = canTranslate && (progress?.TranslationModeOn ?? false)
         };
 
         var landingChapter = chapters.FirstOrDefault();
@@ -135,8 +152,69 @@ public class ReaderController : Controller
             return NotFound();
         }
 
-        await _readingProgressService.SaveAsync(id, dto.ChapterId, dto.Page);
+        await _readingProgressService.SaveAsync(id, dto.ChapterId, dto.Page, dto.TranslationModeOn);
         return Ok();
+    }
+
+    [HttpGet("{id:guid}/Chapter/{chapterId:guid}/Translations")]
+    public async Task<IActionResult> GetTranslations(Guid id, Guid chapterId)
+    {
+        var book = await GetOwnedBookAsync(id);
+        if (book is null)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var chapters = await _bookService.GetChaptersAsync(id);
+        if (chapters.All(c => c.Id != chapterId))
+        {
+            return NotFound();
+        }
+
+        var translations = await _translationService.GetByChapterAsync(chapterId);
+        return Ok(translations.Select(t => new { paragraphIndex = t.ParagraphIndex, translatedText = t.TranslatedText }));
+    }
+
+    [HttpPost("{id:guid}/Chapter/{chapterId:guid}/Translations")]
+    public async Task<IActionResult> SaveTranslation(Guid id, Guid chapterId, [FromBody] TranslationSaveDto? dto)
+    {
+        if (dto is null || dto.ParagraphIndex < 0 || (dto.TranslatedText?.Length ?? 0) > MaxTranslationLength)
+        {
+            return BadRequest(new { error = "Invalid translation payload." });
+        }
+
+        var book = await GetOwnedBookAsync(id);
+        if (book is null)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var chapters = await _bookService.GetChaptersAsync(id);
+        if (chapters.All(c => c.Id != chapterId))
+        {
+            return NotFound();
+        }
+
+        await _translationService.UpsertAsync(id, chapterId, dto.ParagraphIndex, dto.TranslatedText ?? string.Empty);
+        return Ok();
+    }
+
+    [HttpGet("{id:guid}/ExportTranslation")]
+    public async Task<IActionResult> ExportTranslation(Guid id)
+    {
+        var recoveryKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
+        if (recoveryKey is null)
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        var export = await _translationExportService.ExportTranslationToDocxAsync(id, recoveryKey.Id);
+        if (export is null)
+        {
+            return NotFound();
+        }
+
+        return File(export.Value.Bytes, DocxContentType, export.Value.FileName);
     }
 
     [HttpPost("{id:guid}/Bookmarks")]
@@ -164,6 +242,18 @@ public class ReaderController : Controller
         return Ok();
     }
 
+    private async Task<Book?> GetOwnedBookAsync(Guid id)
+    {
+        var recoveryKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
+        if (recoveryKey is null)
+        {
+            return null;
+        }
+
+        var book = await _bookService.GetBookByIdAsync(id);
+        return book is not null && book.RecoveryKeyId == recoveryKey.Id ? book : null;
+    }
+
     private static BookmarkSummary ToSummary(Bookmark bookmark)
     {
         return new BookmarkSummary
@@ -186,15 +276,20 @@ public class ReaderController : Controller
             _ => string.Empty
         };
 
+        string html;
         if (book.Type == BookType.Pdf)
         {
-            return rawHtml;
+            html = rawHtml;
+        }
+        else
+        {
+            Func<string, string>? resolveAssetUrl = book.Type == BookType.Epub
+                ? src => Url.Action("Asset", "Reader", new { id = book.Id, chapterId = chapter.Id, src })!
+                : null;
+
+            html = ChapterHtmlSanitizer.ExtractAndSanitize(rawHtml, resolveAssetUrl);
         }
 
-        Func<string, string>? resolveAssetUrl = book.Type == BookType.Epub
-            ? src => Url.Action("Asset", "Reader", new { id = book.Id, chapterId = chapter.Id, src })!
-            : null;
-
-        return ChapterHtmlSanitizer.ExtractAndSanitize(rawHtml, resolveAssetUrl);
+        return ChapterHtmlSanitizer.IndexParagraphs(html);
     }
 }

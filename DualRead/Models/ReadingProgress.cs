@@ -13,5 +13,7 @@ public class ReadingProgress
 
     public int CurrentPage { get; set; }
 
+    public bool TranslationModeOn { get; set; }
+
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }

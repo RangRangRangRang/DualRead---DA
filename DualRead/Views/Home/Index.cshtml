@@ -26,10 +26,30 @@
         </div>
 
         <div class="gateway-section">
+            <form asp-controller="Home" asp-action="OpenLibrary" method="post" class="w-100 mb-3">
+                @Html.AntiForgeryToken()
+                <div class="key-input-group">
+                    <input type="text" name="RecoveryKeyCode" id="user-key-input" class="gateway-input" placeholder="Nhập Recovery Key..." required />
+                    <button type="submit" class="btn-gateway btn-outline">Mở thư viện &rarr;</button>
+                </div>
+                @if (Model.ErrorMessage is not null)
+                {
+                    <div class="key-error">@Model.ErrorMessage</div>
+                }
+            </form>
+
             <a href="/Library" class="btn-gateway btn-outline w-100 text-center text-decoration-none">To Library &rarr;</a>
         </div>
     </div>
 </div>
+
+@if (TempData["JustCreatedKey"] is string justCreatedKey && !string.IsNullOrEmpty(justCreatedKey))
+{
+    <div class="gateway-new-key-banner">
+        <p>Thư viện của bạn vừa được tạo. Lưu lại Recovery Key này để mở lại thư viện sau - mất key sẽ không khôi phục được:</p>
+        <code class="gateway-key-code">@justCreatedKey</code>
+    </div>
+}
 
 @if (TempData["UploadErrors"] is string uploadErrorsRaw && !string.IsNullOrEmpty(uploadErrorsRaw))
 {

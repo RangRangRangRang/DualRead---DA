@@ -4,6 +4,13 @@ public class SaveProgressDto
 {
     public Guid? ChapterId { get; set; }
     public int Page { get; set; }
+    public bool TranslationModeOn { get; set; }
+}
+
+public class TranslationSaveDto
+{
+    public int ParagraphIndex { get; set; }
+    public string TranslatedText { get; set; } = string.Empty;
 }
 
 public class CreateBookmarkDto

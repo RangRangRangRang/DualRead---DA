@@ -1919,3 +1919,657 @@ body.theme-sepia .pdf-page-image {
     color: var(--eb-teal);
     border-color: var(--eb-teal);
 }
+
+.gateway-new-key-banner {
+    max-width: 420px;
+    margin: 20px auto 0;
+    padding: 16px 20px;
+    border: 1px solid rgba(0, 201, 167, 0.35);
+    background: rgba(0, 201, 167, 0.08);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.gateway-new-key-banner p {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: var(--eb-text);
+}
+
+.gateway-key-code {
+    display: inline-block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #00c9a7;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 14px;
+    border-radius: 6px;
+}
+
+.lib-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(0, 201, 167, 0.18);
+    color: #00c9a7;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.vocab-list-item {
+    gap: 8px;
+}
+
+.vocab-pair-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* ==========================================================================
+   QUICK TRANSLATOR BUBBLE & POPOVER
+   ========================================================================== */
+
+.quick-trans-bubble {
+    position: absolute;
+    z-index: 99999;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #0f172a;
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.25);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, box-shadow 0.15s ease;
+    opacity: 0;
+    transform: scale(0.85);
+}
+
+.quick-trans-bubble.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.quick-trans-bubble:hover {
+    background: #1e293b;
+    color: #7dd3fc;
+    transform: scale(1.1);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 0 16px rgba(56, 189, 248, 0.4);
+}
+
+.quick-trans-popover {
+    position: absolute;
+    z-index: 100000;
+    width: 420px;
+    max-width: calc(100vw - 24px);
+    background: #0f172a;
+    color: #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.25);
+    display: none;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 14.5px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    overflow: hidden;
+}
+
+.quick-trans-popover.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.quick-trans-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.quick-trans-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.quick-trans-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quick-trans-btn,
+.quick-trans-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.quick-trans-btn:hover,
+.quick-trans-close-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.quick-trans-close-btn {
+    font-size: 18px;
+    line-height: 1;
+    width: 24px;
+    height: 24px;
+}
+
+.quick-trans-copy-btn.copied {
+    color: #10b981;
+}
+
+.quick-trans-body {
+    padding: 14px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.quick-trans-result {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+    color: #f8fafc;
+    margin-bottom: 8px;
+}
+
+.quick-trans-dict {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.quick-trans-dict-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12.5px;
+}
+
+.dict-pos {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dict-terms {
+    color: #cbd5e1;
+}
+
+.quick-trans-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quick-trans-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.quick-trans-save-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.quick-trans-save-btn.saved {
+    background: rgba(234, 179, 8, 0.15);
+    color: #fde047;
+    border-color: rgba(234, 179, 8, 0.4);
+}
+
+/* Skeleton Loading */
+.quick-trans-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 6px 0;
+}
+
+.skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.06) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.4s infinite;
+}
+
+.skeleton-line-title {
+    width: 85%;
+    height: 18px;
+}
+
+.skeleton-line-sub {
+    width: 55%;
+}
+
+@keyframes skeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* =========================================================================
+   RESPONSIVE & MOBILE ENHANCEMENTS (Tuan 5)
+   Adapted from the original's "TABLETS & SCREENS UNDER 900PX" block, but
+   rewritten against this slice's own sidebar toggle classes (.open /
+   .sidebar-backdrop.show, set by reader.js) instead of the original's
+   .mobile-open / .mobile-sidebar-active, and against .page-frame/.page-track
+   (this slice's real pagination) instead of .reader-viewport (the original's
+   scroll-based reader). Export/Translate-toggle/Translation-mode rules are
+   dropped since those features are not part of this slice.
+   ========================================================================= */
+:root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+}
+
+@media (max-width: 900px) {
+    .reader-app {
+        width: 100vw;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .icon-toggle-btn {
+        display: flex;
+    }
+
+    .reader-topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 54px;
+        padding: 0 calc(12px + var(--sar)) 0 calc(12px + var(--sal));
+        background: rgba(18, 20, 23, 0.82);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+        gap: 8px;
+        z-index: 90;
+        pointer-events: auto;
+    }
+
+    .reader-topbar .reader-book-title {
+        position: static;
+        flex: 1;
+        text-align: center;
+        max-width: none;
+        margin: 0 4px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .reader-center {
+        width: 100%;
+        padding: 54px 0 0 0;
+        height: 100dvh;
+    }
+
+    .page-frame {
+        height: calc(100dvh - 54px);
+    }
+
+    .reader-content-box {
+        font-size: 17.5px;
+        line-height: 1.7;
+        padding: 0 10px;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        width: 86vw;
+        min-width: 86vw;
+        max-width: 350px;
+        background: #161a23;
+        padding: calc(16px + var(--sat)) 16px calc(24px + var(--sab));
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.65);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
+        transform: translateX(-100%);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .sidebar-left {
+        left: 0;
+        transform: translateX(-100%);
+    }
+
+    .sidebar-right {
+        right: 0;
+        transform: translateX(100%);
+    }
+
+    .sidebar-close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sidebar-left.open,
+    .sidebar-right.open {
+        transform: translateX(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .sidebar-backdrop.show {
+        display: block;
+        opacity: 1;
+    }
+
+    .library-page {
+        padding: 24px 16px calc(30px + var(--sab));
+    }
+
+    .library-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        padding-bottom: 14px;
+        margin-bottom: 20px;
+    }
+
+    .library-title-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .library-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+}
+
+/* =========================================================================
+   QUICK TRANSLATE POPOVER ON NARROW SCREENS (Tuan 5)
+   ========================================================================= */
+@media (max-width: 640px) {
+    .quick-trans-bubble {
+        width: 40px;
+        height: 40px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(56, 189, 248, 0.35);
+    }
+
+    .quick-trans-popover {
+        width: calc(100vw - 20px) !important;
+        max-width: 400px !important;
+        border-radius: 16px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .quick-trans-header {
+        padding: 10px 14px;
+    }
+
+    .quick-trans-title {
+        max-width: 200px;
+        font-size: 12.5px;
+    }
+
+    .quick-trans-body {
+        padding: 12px 14px;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+    .quick-trans-result {
+        font-size: 14.5px;
+    }
+
+    .quick-trans-footer {
+        padding: 8px 14px;
+    }
+
+    .quick-trans-save-btn {
+        padding: 7px 13px;
+        font-size: 12.5px;
+        border-radius: 8px;
+    }
+}
+
+/* =========================================================================
+   TRANSLATION MODE (Tuan 6): toggle button, export link, paired grid
+   ========================================================================= */
+.translate-toggle-btn {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--eb-bg);
+    border: 1px solid var(--eb-border);
+    color: var(--eb-text);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+    .translate-toggle-btn:hover {
+        border-color: var(--eb-teal);
+        color: var(--eb-teal);
+    }
+
+    .translate-toggle-btn[aria-pressed="true"] {
+        background-color: var(--eb-teal);
+        border-color: var(--eb-teal);
+        color: #0d1117;
+    }
+
+.export-translation-btn {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--eb-bg);
+    border: 1px solid var(--eb-border);
+    color: var(--eb-text);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+    .export-translation-btn:hover {
+        border-color: var(--eb-teal);
+        color: var(--eb-teal);
+        text-decoration: none;
+    }
+
+.translation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 28px;
+    row-gap: 18px;
+    align-items: start;
+}
+
+.tr-original {
+    padding: 4px 8px;
+    margin: -4px -8px;
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: inherit;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .tr-original:hover {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tr-original.active {
+        background: rgba(0, 201, 167, 0.1);
+        box-shadow: 0 0 0 1px rgba(0, 201, 167, 0.4);
+    }
+
+.tr-textarea {
+    width: 100%;
+    min-height: 40px;
+    resize: none;
+    overflow: hidden;
+    background: var(--eb-surface);
+    border: 1px solid var(--eb-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--eb-text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+    .tr-textarea:focus {
+        outline: none;
+        border-color: var(--eb-teal);
+        box-shadow: 0 0 0 1px var(--eb-teal);
+    }
+
+
+/* =========================================================================
+   MILESTONE-SLICE-ONLY RULES (Tuan 6): the scrollable translation view that
+   replaces the paginated frame while Translate is on, heading rows spanning
+   both columns, status line and narrow-screen layout.
+   ========================================================================= */
+.translation-view {
+    width: 100%;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    padding: 8px 8px 32px;
+    scrollbar-width: thin;
+}
+
+.translation-view .translation-grid {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.tr-heading {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin: 0.75em 0 0.25em;
+}
+
+.tr-status {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 24px 0;
+    color: var(--eb-text-dim);
+}
+
+.translation-view-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 1100px;
+    margin: 24px auto 0;
+}
+
+.translation-save-status {
+    pointer-events: auto;
+    min-width: 72px;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--eb-text-dim);
+}
+
+.translation-save-status.error {
+    color: #f87171;
+}
+
+@media (max-width: 900px) {
+    .translate-toggle-label,
+    .export-translation-label {
+        display: none;
+    }
+
+    .translate-toggle-btn,
+    .export-translation-btn {
+        padding: 6px 10px;
+    }
+
+    .translation-view {
+        height: calc(100dvh - 54px);
+        padding-bottom: calc(32px + var(--sab));
+    }
+}
+
+@media (max-width: 760px) {
+    .translation-view .translation-grid {
+        grid-template-columns: 1fr;
+        row-gap: 10px;
+    }
+
+    .tr-original {
+        margin-top: 10px;
+    }
+
+    .translation-save-status {
+        display: none;
+    }
+}

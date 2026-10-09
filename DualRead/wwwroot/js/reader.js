@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var bootstrapEl = document.getElementById('reader-bootstrap-data');
     var bootstrap = bootstrapEl
         ? JSON.parse(bootstrapEl.textContent)
-        : { bookId: null, chapters: [], landingChapterId: null, landingPage: 0, bookmarks: [] };
+        : { bookId: null, chapters: [], landingChapterId: null, landingPage: 0, bookmarks: [], canTranslate: false, translationModeOn: false };
 
     var readerApp = document.getElementById('reader-app');
     var pageFrame = document.getElementById('page-frame');
@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var nextChapterBtn = document.getElementById('next-chapter-btn');
     var bookmarkToggleBtn = document.getElementById('bookmark-toggle-btn');
     var bookmarkList = document.getElementById('panel-bookmarks');
+    var translationView = document.getElementById('translation-view');
+    var translationGrid = document.getElementById('translation-grid');
+    var translateToggleBtn = document.getElementById('translate-toggle');
+    var saveStatusEl = document.getElementById('translation-save-status');
+    var trPrevChapterBtn = document.getElementById('tr-prev-chapter-btn');
+    var trNextChapterBtn = document.getElementById('tr-next-chapter-btn');
 
     var chapters = bootstrap.chapters || [];
     var bookmarks = bootstrap.bookmarks || [];
@@ -25,14 +31,24 @@ document.addEventListener('DOMContentLoaded', function () {
     var pendingLandingPage = bootstrap.landingPage || 0;
     var progressSaveTimeout = null;
 
+    var canTranslate = !!bootstrap.canTranslate && !!translationView && !!translationGrid;
+    var translationModeOn = false;
+    var translationBuildToken = 0;
+    var pendingTranslationSaves = {};
+    var translationSaveTimers = {};
+
     function isEditableTarget(target) {
         if (!target) return false;
         var tag = target.tagName ? target.tagName.toLowerCase() : '';
         return tag === 'input' || tag === 'select' || tag === 'textarea' || tag === 'button';
     }
 
+    function getStyledTargets() {
+        return [pageTrack, translationView].filter(function (el) { return !!el; });
+    }
+
     function recalculatePagination() {
-        if (!pageFrame || !pageTrack) return;
+        if (!pageFrame || !pageTrack || translationModeOn) return;
 
         var frameWidth = pageFrame.clientWidth;
         pageTrack.style.columnWidth = frameWidth + 'px';
@@ -123,6 +139,10 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadChapter(chapterId, landing) {
         if (!bootstrap.bookId) return Promise.resolve();
 
+        if (translationModeOn) {
+            flushTranslationSaves(false);
+        }
+
         return fetch('/Reader/' + bootstrap.bookId + '/Chapter/' + chapterId)
             .then(function (res) {
                 if (!res.ok) throw new Error('Failed to load chapter');
@@ -134,6 +154,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 setActiveChapterListItem(chapterId);
 
                 currentPage = 0;
+
+                if (translationModeOn) {
+                    renderTranslationView();
+                    scheduleProgressSave();
+                    return;
+                }
+
                 recalculatePagination();
 
                 if (landing === 'last') {
@@ -164,11 +191,216 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/Reader/' + bootstrap.bookId + '/Progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chapterId: currentChapterId, page: currentPage }),
+            body: JSON.stringify({ chapterId: currentChapterId, page: currentPage, translationModeOn: translationModeOn }),
             keepalive: true
         }).catch(function (err) {
             console.error('Progress save error:', err);
         });
+    }
+
+    function setSaveStatus(state) {
+        if (!saveStatusEl) return;
+
+        saveStatusEl.classList.remove('error');
+        if (state === 'saving') {
+            saveStatusEl.textContent = 'Đang lưu...';
+        } else if (state === 'saved') {
+            saveStatusEl.textContent = 'Đã lưu';
+        } else if (state === 'error') {
+            saveStatusEl.textContent = 'Lỗi lưu, thử lại';
+            saveStatusEl.classList.add('error');
+        } else {
+            saveStatusEl.textContent = '';
+        }
+    }
+
+    function autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    function autoResizeAllTextareas() {
+        if (!translationGrid) return;
+        translationGrid.querySelectorAll('.tr-textarea').forEach(autoResizeTextarea);
+    }
+
+    function setActiveParagraph(paragraphIndex) {
+        translationGrid.querySelectorAll('.tr-original').forEach(function (el) {
+            el.classList.toggle('active', el.getAttribute('data-p-index') === String(paragraphIndex));
+        });
+
+        var active = translationGrid.querySelector('.tr-original.active');
+        if (active && active.scrollIntoView) {
+            active.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function queueTranslationSave(chapterId, paragraphIndex, text) {
+        var key = chapterId + ':' + paragraphIndex;
+        pendingTranslationSaves[key] = {
+            chapterId: chapterId,
+            paragraphIndex: Number(paragraphIndex),
+            translatedText: text
+        };
+
+        setSaveStatus('saving');
+        clearTimeout(translationSaveTimers[key]);
+        translationSaveTimers[key] = setTimeout(function () {
+            sendTranslationSave(key, false);
+        }, 800);
+    }
+
+    function sendTranslationSave(key, keepalive) {
+        var item = pendingTranslationSaves[key];
+        if (!item) return Promise.resolve();
+
+        delete pendingTranslationSaves[key];
+        clearTimeout(translationSaveTimers[key]);
+        delete translationSaveTimers[key];
+
+        return fetch('/Reader/' + bootstrap.bookId + '/Chapter/' + item.chapterId + '/Translations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paragraphIndex: item.paragraphIndex, translatedText: item.translatedText }),
+            keepalive: !!keepalive
+        })
+            .then(function (res) {
+                if (!res.ok) throw new Error('Save failed');
+                if (Object.keys(pendingTranslationSaves).length === 0) {
+                    setSaveStatus('saved');
+                }
+            })
+            .catch(function (err) {
+                console.error('Translation save error:', err);
+                setSaveStatus('error');
+            });
+    }
+
+    function flushTranslationSaves(keepalive) {
+        Object.keys(pendingTranslationSaves).forEach(function (key) {
+            sendTranslationSave(key, keepalive);
+        });
+    }
+
+    function buildTranslationGrid(chapterId, savedTranslations) {
+        var savedByIndex = {};
+        (savedTranslations || []).forEach(function (t) {
+            savedByIndex[t.paragraphIndex] = t.translatedText;
+        });
+
+        translationGrid.innerHTML = '';
+
+        var nodes = pageTrack.querySelectorAll('p[data-p-index], h1, h2, h3, h4, h5, h6');
+        var rowCount = 0;
+
+        nodes.forEach(function (node) {
+            var text = (node.textContent || '').trim();
+            if (!text) return;
+
+            if (node.tagName === 'P') {
+                var index = node.getAttribute('data-p-index');
+
+                var original = document.createElement('div');
+                original.className = 'tr-original';
+                original.setAttribute('data-p-index', index);
+                original.innerHTML = node.innerHTML;
+
+                var textarea = document.createElement('textarea');
+                textarea.className = 'tr-textarea';
+                textarea.setAttribute('data-p-index', index);
+                textarea.rows = 1;
+                textarea.placeholder = 'Nhập bản dịch...';
+                textarea.value = savedByIndex[index] || '';
+
+                textarea.addEventListener('input', function () {
+                    autoResizeTextarea(textarea);
+                    queueTranslationSave(chapterId, index, textarea.value);
+                });
+                textarea.addEventListener('focus', function () {
+                    setActiveParagraph(index);
+                });
+                original.addEventListener('click', function () {
+                    var selection = window.getSelection();
+                    if (selection && selection.toString().trim()) return;
+                    textarea.focus();
+                });
+
+                translationGrid.appendChild(original);
+                translationGrid.appendChild(textarea);
+                rowCount++;
+            } else {
+                var heading = document.createElement(node.tagName.toLowerCase());
+                heading.className = 'tr-heading';
+                heading.innerHTML = node.innerHTML;
+                translationGrid.appendChild(heading);
+            }
+        });
+
+        if (rowCount === 0) {
+            translationGrid.innerHTML = '<p class="tr-status">Chương này không có đoạn văn bản nào để dịch.</p>';
+            return;
+        }
+
+        autoResizeAllTextareas();
+        translationView.scrollTop = 0;
+    }
+
+    function renderTranslationView() {
+        if (!translationGrid || !pageTrack || !currentChapterId) return;
+
+        var chapterId = currentChapterId;
+        var token = ++translationBuildToken;
+
+        translationGrid.innerHTML = '<p class="tr-status">Đang tải bản dịch...</p>';
+
+        fetch('/Reader/' + bootstrap.bookId + '/Chapter/' + chapterId + '/Translations')
+            .then(function (res) {
+                if (!res.ok) throw new Error('Failed to load translations');
+                return res.json();
+            })
+            .then(function (list) {
+                if (token !== translationBuildToken) return;
+                buildTranslationGrid(chapterId, list);
+            })
+            .catch(function (err) {
+                console.error('Translation load error:', err);
+                if (token !== translationBuildToken) return;
+                translationGrid.innerHTML = '<p class="tr-status">Không tải được bản dịch. Hãy mở lại thư viện bằng Recovery Key của bạn.</p>';
+            });
+    }
+
+    function setTranslationMode(on, silent) {
+        if (!canTranslate || !pageFrame) return;
+        if (on === translationModeOn) return;
+
+        translationModeOn = on;
+
+        if (translateToggleBtn) {
+            translateToggleBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        }
+
+        if (on) {
+            pageFrame.hidden = true;
+            if (pageIndicator) pageIndicator.hidden = true;
+            translationView.hidden = false;
+            if (bookmarkToggleBtn) bookmarkToggleBtn.style.display = 'none';
+            if (saveStatusEl) saveStatusEl.hidden = false;
+            setSaveStatus('');
+            renderTranslationView();
+        } else {
+            flushTranslationSaves(false);
+            translationBuildToken++;
+            translationView.hidden = true;
+            pageFrame.hidden = false;
+            if (pageIndicator) pageIndicator.hidden = false;
+            if (bookmarkToggleBtn) bookmarkToggleBtn.style.display = '';
+            if (saveStatusEl) saveStatusEl.hidden = true;
+            recalculatePagination();
+        }
+
+        if (!silent) {
+            scheduleProgressSave();
+        }
     }
 
     function findBookmarkAtCurrentPosition() {
@@ -230,6 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function addBookmarkAtCurrentPosition() {
+        if (translationModeOn) return;
         if (!bootstrap.bookId || !currentChapterId) return;
         if (findBookmarkAtCurrentPosition()) return;
 
@@ -284,6 +517,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!chapterId) return;
 
         if (chapterId === currentChapterId) {
+            if (translationModeOn) return;
             currentPage = Math.min(Math.max(page, 0), totalPages - 1);
             applyPageTransform();
             onPositionChanged();
@@ -310,13 +544,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (bookmarkToggleBtn) {
-        bookmarkToggleBtn.addEventListener('click', addBookmarkAtCurrentPosition);
+        bookmarkToggleBtn.addEventListener('click', function () {
+            addBookmarkAtCurrentPosition();
+            bookmarkToggleBtn.blur();
+        });
     }
 
-    if (arrowRight) arrowRight.addEventListener('click', goToNextPage);
-    if (arrowLeft) arrowLeft.addEventListener('click', goToPrevPage);
-    if (nextChapterBtn) nextChapterBtn.addEventListener('click', function () { goToAdjacentChapter(1); });
-    if (prevChapterBtn) prevChapterBtn.addEventListener('click', function () { goToAdjacentChapter(-1); });
+    if (translateToggleBtn) {
+        translateToggleBtn.addEventListener('click', function () {
+            setTranslationMode(!translationModeOn, false);
+            translateToggleBtn.blur();
+        });
+    }
+
+    if (arrowRight) arrowRight.addEventListener('click', function () { goToNextPage(); arrowRight.blur(); });
+    if (arrowLeft) arrowLeft.addEventListener('click', function () { goToPrevPage(); arrowLeft.blur(); });
+    if (nextChapterBtn) nextChapterBtn.addEventListener('click', function () { goToAdjacentChapter(1); nextChapterBtn.blur(); });
+    if (prevChapterBtn) prevChapterBtn.addEventListener('click', function () { goToAdjacentChapter(-1); prevChapterBtn.blur(); });
+    if (trNextChapterBtn) trNextChapterBtn.addEventListener('click', function () { goToAdjacentChapter(1); trNextChapterBtn.blur(); });
+    if (trPrevChapterBtn) trPrevChapterBtn.addEventListener('click', function () { goToAdjacentChapter(-1); trPrevChapterBtn.blur(); });
 
     chapterListItems.forEach(function (item) {
         item.addEventListener('click', function () {
@@ -330,6 +576,18 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', function (e) {
         if (isEditableTarget(e.target)) return;
         if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        if (translationModeOn) {
+            if (e.key === 't' || e.key === 'T') {
+                e.preventDefault();
+                setTranslationMode(false, false);
+            } else if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            } else if (e.key === 'Escape') {
+                closeSidebars();
+            }
+            return;
+        }
 
         switch (e.key) {
             case ' ':
@@ -353,6 +611,13 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'b':
             case 'B':
                 addBookmarkAtCurrentPosition();
+                break;
+            case 't':
+            case 'T':
+                if (canTranslate) {
+                    e.preventDefault();
+                    setTranslationMode(true, false);
+                }
                 break;
             case 'f':
             case 'F':
@@ -402,18 +667,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function afterLayoutSettingChange() {
+        recalculatePagination();
+        if (translationModeOn) autoResizeAllTextareas();
+    }
+
     function adjustFontSize(delta) {
         var fontSizeInput = document.getElementById('setting-font-size');
         if (!fontSizeInput) return;
         var newValue = Math.min(32, Math.max(12, parseInt(fontSizeInput.value, 10) + delta * 2));
         fontSizeInput.value = newValue;
         applyFontSize(newValue);
-        recalculatePagination();
+        afterLayoutSettingChange();
     }
 
     function applyFontSize(px) {
-        if (!pageTrack) return;
-        pageTrack.style.fontSize = px + 'px';
+        getStyledTargets().forEach(function (el) { el.style.fontSize = px + 'px'; });
         var label = document.getElementById('setting-font-size-val');
         if (label) label.textContent = px + 'px';
     }
@@ -430,9 +699,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var fontSelect = document.getElementById('setting-font');
     if (fontSelect) {
         fontSelect.addEventListener('change', function () {
-            if (pageTrack) pageTrack.style.fontFamily = fontSelect.value;
+            getStyledTargets().forEach(function (el) { el.style.fontFamily = fontSelect.value; });
             fontSelect.blur();
-            recalculatePagination();
+            afterLayoutSettingChange();
         });
     }
 
@@ -441,46 +710,41 @@ document.addEventListener('DOMContentLoaded', function () {
         fontSizeInput.addEventListener('input', function () {
             applyFontSize(parseInt(fontSizeInput.value, 10));
         });
-        fontSizeInput.addEventListener('change', function () {
-            recalculatePagination();
-        });
+        fontSizeInput.addEventListener('change', afterLayoutSettingChange);
     }
 
     var lineHeightInput = document.getElementById('setting-line-height');
     if (lineHeightInput) {
         lineHeightInput.addEventListener('input', function () {
             var value = parseFloat(lineHeightInput.value);
-            if (pageTrack) pageTrack.style.lineHeight = value;
+            getStyledTargets().forEach(function (el) { el.style.lineHeight = value; });
             var label = document.getElementById('setting-line-height-val');
             if (label) label.textContent = value.toFixed(2).replace(/0$/, '').replace(/\.$/, '');
         });
-        lineHeightInput.addEventListener('change', function () {
-            recalculatePagination();
-        });
+        lineHeightInput.addEventListener('change', afterLayoutSettingChange);
     }
 
     var letterSpacingInput = document.getElementById('setting-letter-spacing');
     if (letterSpacingInput) {
         letterSpacingInput.addEventListener('input', function () {
             var value = parseFloat(letterSpacingInput.value);
-            if (pageTrack) pageTrack.style.letterSpacing = value + 'em';
+            getStyledTargets().forEach(function (el) { el.style.letterSpacing = value + 'em'; });
             var label = document.getElementById('setting-letter-spacing-val');
             if (label) label.textContent = value.toFixed(2) + 'em';
         });
-        letterSpacingInput.addEventListener('change', function () {
-            recalculatePagination();
-        });
+        letterSpacingInput.addEventListener('change', afterLayoutSettingChange);
     }
 
     var resizeTimeout = null;
     window.addEventListener('resize', function () {
         clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(recalculatePagination, 150);
+        resizeTimeout = setTimeout(afterLayoutSettingChange, 150);
     });
 
     window.addEventListener('beforeunload', function () {
         clearTimeout(progressSaveTimeout);
         saveProgressNow();
+        flushTranslationSaves(true);
     });
 
     if (pageFrame && pageTrack) {
@@ -490,6 +754,10 @@ document.addEventListener('DOMContentLoaded', function () {
             currentPage = Math.min(pendingLandingPage, totalPages - 1);
             applyPageTransform();
             updatePageIndicator();
+        }
+
+        if (canTranslate && bootstrap.translationModeOn) {
+            setTranslationMode(true, true);
         }
     }
 });

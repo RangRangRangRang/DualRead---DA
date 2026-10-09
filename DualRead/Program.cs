@@ -22,6 +22,9 @@ if (!string.IsNullOrWhiteSpace(port))
 }
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(configuredConnectionString));
@@ -29,9 +32,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IEpubParsingService, EpubParsingService>();
 builder.Services.AddScoped<IPdfParsingService, PdfParsingService>();
 builder.Services.AddScoped<IDocxParsingService, DocxParsingService>();
+builder.Services.AddScoped<IRecoveryKeyService, RecoveryKeyService>();
+builder.Services.AddScoped<ICurrentRecoveryKeyAccessor, CurrentRecoveryKeyAccessor>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddScoped<IReadingProgressService, ReadingProgressService>();
+builder.Services.AddScoped<IVocabularyService, VocabularyService>();
+builder.Services.AddScoped<ITranslationService, TranslationService>();
+builder.Services.AddScoped<ITranslationExportService, TranslationExportService>();
 
 var app = builder.Build();
 
