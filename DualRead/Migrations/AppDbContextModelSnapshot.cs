@@ -22,6 +22,58 @@ namespace DualRead.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DualRead.Models.Album", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("RecoveryKeyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecoveryKeyId");
+
+                    b.ToTable("Albums");
+                });
+
+            modelBuilder.Entity("DualRead.Models.AlbumBook", b =>
+                {
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AlbumId", "BookId");
+
+                    b.HasIndex("BookId");
+
+                    b.ToTable("AlbumBooks");
+                });
+
             modelBuilder.Entity("DualRead.Models.Book", b =>
                 {
                     b.Property<Guid>("Id")
@@ -172,6 +224,38 @@ namespace DualRead.Migrations
                     b.ToTable("RecoveryKeys");
                 });
 
+            modelBuilder.Entity("DualRead.Models.Settings", b =>
+                {
+                    b.Property<Guid>("RecoveryKeyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("DarkMode")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Font")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("FontSize")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<double>("LetterSpacing")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("LineHeight")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("RecoveryKeyId");
+
+                    b.ToTable("Settings");
+                });
+
             modelBuilder.Entity("DualRead.Models.Translation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -250,6 +334,36 @@ namespace DualRead.Migrations
                     b.ToTable("VocabularyItems");
                 });
 
+            modelBuilder.Entity("DualRead.Models.Album", b =>
+                {
+                    b.HasOne("DualRead.Models.RecoveryKey", "RecoveryKey")
+                        .WithMany()
+                        .HasForeignKey("RecoveryKeyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RecoveryKey");
+                });
+
+            modelBuilder.Entity("DualRead.Models.AlbumBook", b =>
+                {
+                    b.HasOne("DualRead.Models.Album", "Album")
+                        .WithMany("AlbumBooks")
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DualRead.Models.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Album");
+
+                    b.Navigation("Book");
+                });
+
             modelBuilder.Entity("DualRead.Models.Book", b =>
                 {
                     b.HasOne("DualRead.Models.RecoveryKey", "RecoveryKey")
@@ -301,6 +415,17 @@ namespace DualRead.Migrations
                     b.Navigation("Book");
                 });
 
+            modelBuilder.Entity("DualRead.Models.Settings", b =>
+                {
+                    b.HasOne("DualRead.Models.RecoveryKey", "RecoveryKey")
+                        .WithOne()
+                        .HasForeignKey("DualRead.Models.Settings", "RecoveryKeyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RecoveryKey");
+                });
+
             modelBuilder.Entity("DualRead.Models.Translation", b =>
                 {
                     b.HasOne("DualRead.Models.Book", "Book")
@@ -336,6 +461,11 @@ namespace DualRead.Migrations
                     b.Navigation("Book");
 
                     b.Navigation("RecoveryKey");
+                });
+
+            modelBuilder.Entity("DualRead.Models.Album", b =>
+                {
+                    b.Navigation("AlbumBooks");
                 });
 
             modelBuilder.Entity("DualRead.Models.Book", b =>

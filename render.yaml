@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: dualread
+    runtime: docker
+    plan: free
+    dockerfilePath: ./DualRead/Dockerfile
+    dockerContext: ./DualRead
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dualread-db
+          property: connectionString
+
+databases:
+  - name: dualread-db
+    plan: free
+    databaseName: dualread
+    user: dualread

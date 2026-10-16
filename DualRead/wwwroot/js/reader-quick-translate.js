@@ -1,4 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
+    function t(key) {
+        return window.DualReadI18n ? window.DualReadI18n.t(key) : key;
+    }
+
     var pageTrack = document.getElementById('page-track');
     if (!pageTrack) return;
 
@@ -8,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var bubble = document.createElement('button');
     bubble.type = 'button';
     bubble.className = 'quick-trans-bubble';
-    bubble.setAttribute('aria-label', 'Dịch nhanh');
+    bubble.setAttribute('aria-label', t('qt.title'));
     bubble.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
     document.body.appendChild(bubble);
 
@@ -81,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         popover.innerHTML =
             '<div class="quick-trans-header">' +
-            '<span class="quick-trans-title">Dịch nhanh</span>' +
+            '<span class="quick-trans-title">' + t('qt.title') + '</span>' +
             '<div class="quick-trans-header-actions">' +
             '<button type="button" class="quick-trans-close-btn" aria-label="Close">&times;</button>' +
             '</div>' +
@@ -110,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(function () {
                 popover.querySelector('.quick-trans-body').innerHTML =
-                    '<p class="quick-trans-result">Không dịch được lúc này, thử lại sau.</p>';
+                    '<p class="quick-trans-result">' + t('qt.error') + '</p>';
             });
     });
 
@@ -132,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var saveBtn = document.createElement('button');
         saveBtn.type = 'button';
         saveBtn.className = 'quick-trans-save-btn';
-        saveBtn.textContent = 'Lưu vào sổ từ vựng';
+        saveBtn.textContent = t('qt.save');
         saveBtn.addEventListener('click', function () {
             saveToVocabulary(data, saveBtn);
         });
@@ -166,11 +170,11 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(function (saved) {
                 lastSavedId = saved.id;
-                saveBtn.textContent = 'Đã lưu';
+                saveBtn.textContent = t('qt.saved');
                 saveBtn.classList.add('saved');
             })
             .catch(function () {
-                alert('Không lưu được vào sổ từ vựng, thử lại sau.');
+                alert(t('qt.saveError'));
             });
     }
 

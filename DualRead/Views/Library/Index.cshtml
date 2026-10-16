@@ -1,29 +1,34 @@
 @model LibraryViewModel
 @{
     ViewData["Title"] = "Library";
+    var currentLang = (ViewBag.Language as string) ?? "en";
 }
 
 <div class="library-page">
     <div class="library-header">
         <div class="library-title-nav">
             <h1 class="library-main-title">
-                <span>Thư viện</span>
+                <span data-i18n="lib.title">Library</span>
                 <span class="library-title-sep">/</span>
-                <span class="library-sub-title">Tất cả sách (@Model.TotalCount sách)</span>
+                <span class="library-sub-title" data-i18n="lib.allBooks" data-i18n-params='{"n":@Model.TotalCount}'>All books (@Model.TotalCount)</span>
             </h1>
         </div>
 
         <div class="library-header-actions">
-            <button type="button" id="btn-recovery-key" class="lib-btn lib-btn-key" data-key-code="@ViewBag.RecoveryKeyCode" title="Bấm để copy Recovery Key">
-                <span class="recovery-badge-label">Recovery Key:</span>
+            <div class="lang-segmented-control" role="group" data-i18n-aria="lib.langAria" aria-label="Language">
+                <button type="button" class="lang-seg-btn @(currentLang == "en" ? "active" : "")" data-lang="en">EN</button>
+                <button type="button" class="lang-seg-btn @(currentLang == "vi" ? "active" : "")" data-lang="vi">VI</button>
+            </div>
+            <button type="button" id="btn-recovery-key" class="lib-btn lib-btn-key" data-key-code="@ViewBag.RecoveryKeyCode" data-i18n-title="lib.keyTitle" title="Click to copy your Recovery Key">
+                <span class="recovery-badge-label" data-i18n="lib.keyLabel">Recovery Key:</span>
                 <span id="recovery-key-text">@ViewBag.RecoveryKeyCode</span>
             </button>
             <button type="button" id="btn-vocabulary" class="lib-btn lib-btn-secondary">
-                <span>Sổ từ vựng</span>
+                <span data-i18n="lib.vocab">Vocabulary</span>
                 <span id="vocab-count-badge" class="lib-tab-count">0</span>
             </button>
             <a id="btn-upload-header" class="lib-btn lib-btn-primary" asp-controller="Home" asp-action="Index">
-                <span>+ Tải sách mới</span>
+                <span data-i18n="lib.upload">+ Upload</span>
             </a>
         </div>
     </div>
@@ -57,84 +62,112 @@
         </div>
     }
 
-    @if (Model.Books.Count == 0)
-    {
-        <div class="library-empty-box">
-            <p class="text-secondary">Chưa có sách nào. Tải lên EPUB, PDF hoặc DOCX đầu tiên để bắt đầu.</p>
-        </div>
-    }
-    else
-    {
-        <div class="book-grid">
-            @foreach (var book in Model.Books)
-            {
-                var formatCode = book.Type.ToString().ToLowerInvariant();
+    <div class="library-nav-tabs" role="tablist">
+        <button type="button" class="lib-tab-btn active" data-tab="books" role="tab">
+            <span data-i18n="lib.tabBooks">All books</span>
+            <span class="lib-tab-count">@Model.TotalCount</span>
+        </button>
+        <button type="button" class="lib-tab-btn" data-tab="albums" role="tab">
+            <span data-i18n="lib.tabAlbums">Albums</span>
+            <span id="albums-count-badge" class="lib-tab-count">0</span>
+        </button>
+    </div>
 
-                <div class="book-card"
-                     data-book-id="@book.Id">
-                    <div class="book-cover-link">
-                        <div class="book-cover">
-                            @if (!string.IsNullOrEmpty(book.CoverImagePath))
-                            {
-                                <img src="@book.CoverImagePath" alt="@book.Title" />
-                            }
-                            else
-                            {
-                                <div class="book-cover-placeholder"></div>
-                            }
-                            <span class="book-type-badge format-badge-@formatCode">@book.Type</span>
+    <section id="panel-books" class="library-panel">
+        @if (Model.Books.Count == 0)
+        {
+            <div class="library-empty-box">
+                <p class="text-secondary" data-i18n="lib.empty">No books yet. Upload your first EPUB, PDF or DOCX to get started.</p>
+            </div>
+        }
+        else
+        {
+            <div class="book-grid">
+                @foreach (var book in Model.Books)
+                {
+                    var formatCode = book.Type.ToString().ToLowerInvariant();
+
+                    <div class="book-card" data-book-id="@book.Id">
+                        <div class="book-cover-link">
+                            <div class="book-cover">
+                                @if (!string.IsNullOrEmpty(book.CoverImagePath))
+                                {
+                                    <img src="@book.CoverImagePath" alt="@book.Title" />
+                                }
+                                else
+                                {
+                                    <div class="book-cover-placeholder"></div>
+                                }
+                                <span class="book-type-badge format-badge-@formatCode">@book.Type</span>
+                            </div>
+                            <div class="book-title" title="@book.Title">@book.Title</div>
+                            <div class="book-author">@(string.IsNullOrEmpty(book.Author) ? "\u00A0" : book.Author)</div>
                         </div>
-                        <div class="book-title" title="@book.Title">@book.Title</div>
-                        <div class="book-author">@(string.IsNullOrEmpty(book.Author) ? "\u00A0" : book.Author)</div>
-                    </div>
-                    <div class="book-card-actions">
-                        <a class="book-card-action-btn book-read-btn" asp-controller="Reader" asp-action="Index" asp-route-id="@book.Id">
-                            <span class="action-label">Đọc</span>
-                        </a>
-                        <button type="button" class="book-card-action-btn book-rename-btn"
-                                data-book-id="@book.Id"
-                                data-book-title="@book.Title"
-                                data-book-author="@(book.Author ?? "")"
-                                title="Đổi tên sách">
-                            <span class="action-label">Đổi tên</span>
-                        </button>
-                        <form asp-controller="Library" asp-action="Delete" method="post"
-                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa sách này khỏi thư viện?');"
-                              class="book-card-action-form">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@book.Id" />
-                            <button type="submit" class="book-card-action-btn book-delete-btn" title="Xóa sách">
-                                <span class="action-label">Xóa</span>
+                        <div class="book-card-actions">
+                            <a class="book-card-action-btn book-read-btn" asp-controller="Reader" asp-action="Index" asp-route-id="@book.Id">
+                                <span class="action-label" data-i18n="lib.read">Read</span>
+                            </a>
+                            <button type="button" class="book-card-action-btn book-albums-btn" data-book-id="@book.Id" data-i18n-title="lib.addAlbumTitle" title="Add to album">
+                                <span class="action-label" data-i18n="lib.addAlbum">Album</span>
                             </button>
-                        </form>
+                            <button type="button" class="book-card-action-btn book-rename-btn"
+                                    data-book-id="@book.Id"
+                                    data-book-title="@book.Title"
+                                    data-book-author="@(book.Author ?? "")"
+                                    data-i18n-title="lib.renameTitle"
+                                    title="Rename book">
+                                <span class="action-label" data-i18n="lib.rename">Rename</span>
+                            </button>
+                            <form asp-controller="Library" asp-action="Delete" method="post" class="book-card-action-form book-delete-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@book.Id" />
+                                <button type="submit" class="book-card-action-btn book-delete-btn" data-i18n-title="lib.deleteTitle" title="Delete book">
+                                    <span class="action-label" data-i18n="lib.delete">Delete</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            }
+                }
+            </div>
+        }
+    </section>
+
+    <section id="panel-albums" class="library-panel" hidden>
+        <div class="albums-toolbar">
+            <button type="button" id="btn-create-album" class="lib-btn lib-btn-primary">
+                <span data-i18n="album.create">+ New album</span>
+            </button>
         </div>
-    }
+        <div id="albums-banner-stack" class="albums-banner-stack"></div>
+        <div id="albums-empty-state" class="albums-empty-state" hidden>
+            <div class="albums-empty-icon" aria-hidden="true">&#128218;</div>
+            <h3 class="albums-empty-title" data-i18n="album.emptyTitle">No albums yet</h3>
+            <p class="albums-empty-desc" data-i18n="album.emptyText">Create an album to group your books.</p>
+        </div>
+    </section>
 
     <div id="book-rename-modal-backdrop" class="lib-modal-backdrop" style="display:none;">
         <div class="lib-modal-card" role="dialog" aria-modal="true" aria-labelledby="book-rename-modal-title">
             <div class="lib-modal-header">
-                <h3 id="book-rename-modal-title" class="lib-modal-title">Đổi tên sách</h3>
-                <button type="button" class="lib-modal-close-btn" data-close-modal="book-rename-modal-backdrop">&times;</button>
+                <h3 id="book-rename-modal-title" class="lib-modal-title" data-i18n="rename.title">Rename book</h3>
+                <button type="button" class="lib-modal-close-btn" data-close-modal="book-rename-modal-backdrop" data-i18n-aria="modal.close" aria-label="Close">&times;</button>
             </div>
             <form id="book-rename-form">
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="rename-book-id" value="" />
                 <div class="lib-modal-body">
                     <div class="lib-form-group">
-                        <label for="rename-book-title-input" class="lib-form-label">Tên sách *</label>
+                        <label for="rename-book-title-input" class="lib-form-label" data-i18n="rename.titleLabel">Title *</label>
                         <input type="text" id="rename-book-title-input" class="lib-form-input" required maxlength="450" autocomplete="off" />
                     </div>
                     <div class="lib-form-group">
-                        <label for="rename-book-author-input" class="lib-form-label">Tác giả (tùy chọn)</label>
+                        <label for="rename-book-author-input" class="lib-form-label" data-i18n="rename.authorLabel">Author (optional)</label>
                         <input type="text" id="rename-book-author-input" class="lib-form-input" maxlength="450" autocomplete="off" />
                     </div>
                 </div>
                 <div class="lib-modal-footer">
-                    <button type="button" class="lib-btn lib-btn-secondary" data-close-modal="book-rename-modal-backdrop">Hủy</button>
-                    <button type="submit" id="rename-book-save-btn" class="lib-btn lib-btn-primary">Lưu</button>
+                    <button type="button" class="lib-btn lib-btn-secondary" data-close-modal="book-rename-modal-backdrop" data-i18n="modal.cancel">Cancel</button>
+                    <button type="submit" id="rename-book-save-btn" class="lib-btn lib-btn-primary" data-i18n="modal.save">Save</button>
                 </div>
             </form>
         </div>
@@ -143,23 +176,75 @@
     <div id="vocabulary-modal-backdrop" class="lib-modal-backdrop" style="display:none;">
         <div class="lib-modal-card lib-modal-card-lg" role="dialog" aria-modal="true" aria-labelledby="vocabulary-modal-title">
             <div class="lib-modal-header">
-                <h3 id="vocabulary-modal-title" class="lib-modal-title">Sổ từ vựng</h3>
-                <button type="button" class="lib-modal-close-btn" data-close-modal="vocabulary-modal-backdrop">&times;</button>
+                <h3 id="vocabulary-modal-title" class="lib-modal-title" data-i18n="vocab.title">Vocabulary</h3>
+                <button type="button" class="lib-modal-close-btn" data-close-modal="vocabulary-modal-backdrop" data-i18n-aria="modal.close" aria-label="Close">&times;</button>
             </div>
             <div class="lib-modal-body">
                 <div class="lib-form-group">
-                    <label for="vocabulary-book-filter" class="lib-form-label">Lọc theo sách</label>
+                    <label for="vocabulary-book-filter" class="lib-form-label" data-i18n="vocab.filter">Filter by book</label>
                     <select id="vocabulary-book-filter" class="form-select form-select-sm settings-input">
-                        <option value="">Tất cả các sách</option>
+                        <option value="" data-i18n="vocab.all">All books</option>
                     </select>
                 </div>
                 <ul id="vocabulary-list" class="sidebar-list"></ul>
-                <p id="vocabulary-empty-hint" class="sidebar-list-empty" hidden>Chưa lưu từ nào. Khi đọc sách, bôi đen một từ rồi bấm "Lưu vào sổ từ vựng" ở popup dịch nhanh.</p>
+                <p id="vocabulary-empty-hint" class="sidebar-list-empty" hidden></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="album-form-modal-backdrop" class="lib-modal-backdrop" style="display:none;">
+        <div class="lib-modal-card" role="dialog" aria-modal="true" aria-labelledby="album-form-modal-title">
+            <div class="lib-modal-header">
+                <h3 id="album-form-modal-title" class="lib-modal-title" data-i18n="album.formCreateTitle">New album</h3>
+                <button type="button" class="lib-modal-close-btn" data-close-modal="album-form-modal-backdrop" data-i18n-aria="modal.close" aria-label="Close">&times;</button>
+            </div>
+            <form id="album-form">
+                <input type="hidden" id="album-form-id" value="" />
+                <div class="lib-modal-body">
+                    <div class="lib-form-group">
+                        <label for="album-form-name" class="lib-form-label" data-i18n="album.nameLabel">Name *</label>
+                        <input type="text" id="album-form-name" class="lib-form-input" required maxlength="200" autocomplete="off" />
+                    </div>
+                    <div class="lib-form-group">
+                        <label for="album-form-description" class="lib-form-label" data-i18n="album.descLabel">Description (optional)</label>
+                        <textarea id="album-form-description" class="lib-form-textarea" rows="3" maxlength="500"></textarea>
+                    </div>
+                    <p id="album-form-error" class="album-form-error" hidden></p>
+                </div>
+                <div class="lib-modal-footer">
+                    <button type="button" class="lib-btn lib-btn-secondary" data-close-modal="album-form-modal-backdrop" data-i18n="modal.cancel">Cancel</button>
+                    <button type="submit" id="album-form-save-btn" class="lib-btn lib-btn-primary" data-i18n="modal.save">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="book-albums-modal-backdrop" class="lib-modal-backdrop" style="display:none;">
+        <div class="lib-modal-card" role="dialog" aria-modal="true" aria-labelledby="book-albums-modal-title">
+            <div class="lib-modal-header">
+                <h3 id="book-albums-modal-title" class="lib-modal-title" data-i18n="album.pickerTitle">Add to albums</h3>
+                <button type="button" class="lib-modal-close-btn" data-close-modal="book-albums-modal-backdrop" data-i18n-aria="modal.close" aria-label="Close">&times;</button>
+            </div>
+            <div class="lib-modal-body">
+                <input type="hidden" id="book-albums-book-id" value="" />
+                <p id="book-albums-none" class="sidebar-list-empty" data-i18n="album.pickerNone" hidden>You have no albums yet. Create one below.</p>
+                <div id="book-albums-checkbox-list" class="lib-checkbox-list"></div>
+                <div class="lib-checkbox-quick-create">
+                    <input type="text" id="quick-album-name" class="lib-form-input" maxlength="200" autocomplete="off" data-i18n-placeholder="album.quickPlaceholder" placeholder="New album name..." />
+                    <button type="button" id="quick-album-create-btn" class="lib-btn lib-btn-secondary" data-i18n="album.quickCreate">Create</button>
+                </div>
+            </div>
+            <div class="lib-modal-footer">
+                <button type="button" class="lib-btn lib-btn-secondary" data-close-modal="book-albums-modal-backdrop" data-i18n="modal.cancel">Cancel</button>
+                <button type="button" id="book-albums-save-btn" class="lib-btn lib-btn-primary" data-i18n="modal.save">Save</button>
             </div>
         </div>
     </div>
 </div>
 
+<script id="app-settings" type="application/json">{"language":"@currentLang"}</script>
+
 @section Scripts {
+    <script src="~/js/i18n.js" asp-append-version="true"></script>
     <script src="~/js/library.js" asp-append-version="true"></script>
 }

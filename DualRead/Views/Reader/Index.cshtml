@@ -9,25 +9,36 @@
         landingPage = Model.LandingPage,
         canTranslate = Model.CanTranslate,
         translationModeOn = Model.TranslationModeOn,
+        canSaveSettings = Model.CanSaveSettings,
+        settings = new
+        {
+            darkMode = Model.Settings.DarkMode,
+            language = Model.Settings.Language,
+            font = Model.Settings.Font,
+            fontSize = Model.Settings.FontSize,
+            lineHeight = Model.Settings.LineHeight,
+            letterSpacing = Model.Settings.LetterSpacing
+        },
         bookmarks = Model.Bookmarks.Select(b => new { id = b.Id, chapterId = b.ChapterId, page = b.Page, previewText = b.PreviewText })
     });
+    var appSettingsJson = System.Text.Json.JsonSerializer.Serialize(new { language = Model.Settings.Language });
 }
 
 <div id="reader-app" class="reader-app" data-book-id="@Model.BookId">
     <aside id="sidebar-left" class="sidebar sidebar-left">
         <div class="sidebar-header">
-            <a class="sidebar-back" asp-controller="Library" asp-action="Index">&larr; Library</a>
-            <button type="button" class="sidebar-close-btn" aria-label="Close" data-close-sidebar>&times;</button>
+            <a class="sidebar-back" asp-controller="Library" asp-action="Index" data-i18n="reader.back">&larr; Library</a>
+            <button type="button" class="sidebar-close-btn" aria-label="Close" data-i18n-aria="reader.close" data-close-sidebar>&times;</button>
         </div>
 
         <div class="sidebar-section">
-            <button type="button" class="sidebar-toggle" data-panel="panel-chapters">Chapters</button>
+            <button type="button" class="sidebar-toggle" data-panel="panel-chapters" data-i18n="reader.chapters">Chapters</button>
             <div class="chapter-nav-buttons">
-                <button type="button" id="prev-chapter-btn" class="chapter-nav-btn" aria-label="Previous chapter" title="Previous chapter">
-                    <span aria-hidden="true">&#8249;</span> <span>Previous</span>
+                <button type="button" id="prev-chapter-btn" class="chapter-nav-btn" aria-label="Previous chapter" title="Previous chapter" data-i18n-aria="reader.prevTitle" data-i18n-title="reader.prevTitle">
+                    <span aria-hidden="true">&#8249;</span> <span data-i18n="reader.prev">Previous</span>
                 </button>
-                <button type="button" id="next-chapter-btn" class="chapter-nav-btn" aria-label="Next chapter" title="Next chapter">
-                    <span>Next</span> <span aria-hidden="true">&#8250;</span>
+                <button type="button" id="next-chapter-btn" class="chapter-nav-btn" aria-label="Next chapter" title="Next chapter" data-i18n-aria="reader.nextTitle" data-i18n-title="reader.nextTitle">
+                    <span data-i18n="reader.next">Next</span> <span aria-hidden="true">&#8250;</span>
                 </button>
             </div>
             <ul id="panel-chapters" class="sidebar-panel sidebar-list open">
@@ -41,18 +52,25 @@
         </div>
 
         <div class="sidebar-section">
-            <button type="button" class="sidebar-toggle" data-panel="panel-bookmarks">Bookmarks</button>
+            <button type="button" class="sidebar-toggle" data-panel="panel-bookmarks" data-i18n="reader.bookmarks">Bookmarks</button>
             <ul id="panel-bookmarks" class="sidebar-panel sidebar-list open">
                 @foreach (var bookmark in Model.Bookmarks)
                 {
                     <li class="sidebar-list-item bookmark-list-item" data-bookmark-id="@bookmark.Id" data-chapter-id="@bookmark.ChapterId" data-page="@bookmark.Page">
-                        <span class="bookmark-preview-text">@(string.IsNullOrWhiteSpace(bookmark.PreviewText) ? $"Trang {bookmark.Page + 1}" : bookmark.PreviewText)</span>
+                        @if (string.IsNullOrWhiteSpace(bookmark.PreviewText))
+                        {
+                            <span class="bookmark-preview-text" data-i18n="reader.pageLabel" data-i18n-params='{"n":@(bookmark.Page + 1)}'>Page @(bookmark.Page + 1)</span>
+                        }
+                        else
+                        {
+                            <span class="bookmark-preview-text">@bookmark.PreviewText</span>
+                        }
                         <button type="button" class="bookmark-delete" data-bookmark-delete-id="@bookmark.Id" aria-label="Delete bookmark">&times;</button>
                     </li>
                 }
                 @if (Model.Bookmarks.Count == 0)
                 {
-                    <li class="sidebar-list-empty" id="bookmark-empty-hint">Chưa có bookmark nào. Nhấn phím B hoặc bấm nút đánh dấu để lưu trang này.</li>
+                    <li class="sidebar-list-empty" id="bookmark-empty-hint" data-i18n="reader.bookmarkEmpty">No bookmarks yet. Press B or tap the star to save this page.</li>
                 }
             </ul>
         </div>
@@ -60,7 +78,7 @@
 
     <main id="reader-center" class="reader-center">
         <div class="reader-topbar">
-            <button type="button" id="sidebar-left-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Menu" aria-controls="sidebar-left" aria-expanded="false">
+            <button type="button" id="sidebar-left-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Menu" data-i18n-aria="reader.menu" aria-controls="sidebar-left" aria-expanded="false">
                 <span aria-hidden="true">&#9776;</span>
             </button>
             <div class="reader-book-title" id="reader-book-title">@Model.Title</div>
@@ -68,19 +86,23 @@
                 @if (Model.CanTranslate)
                 {
                     <span id="translation-save-status" class="translation-save-status" hidden></span>
-                    <button type="button" id="translate-toggle" class="translate-toggle-btn" aria-pressed="false" title="Dịch (T)">
+                    <button type="button" id="translate-toggle" class="translate-toggle-btn" aria-pressed="false" title="Translate (T)" data-i18n-title="reader.translateTitle">
                         <span aria-hidden="true">&#127760;</span>
-                        <span class="translate-toggle-label">Dịch</span>
+                        <span class="translate-toggle-label" data-i18n="reader.translate">Translate</span>
                     </button>
-                    <a id="export-translation-btn" class="export-translation-btn" href="@Url.Action("ExportTranslation", "Reader", new { id = Model.BookId })" title="Xuất bản dịch (.docx)">
+                    <a id="export-translation-btn" class="export-translation-btn" href="@Url.Action("ExportTranslation", "Reader", new { id = Model.BookId })" title="Export translation (.docx)" data-i18n-title="reader.exportTitle">
                         <span aria-hidden="true">&#128190;</span>
-                        <span class="export-translation-label">Xuất bản dịch</span>
+                        <span class="export-translation-label" data-i18n="reader.export">Export translation</span>
                     </a>
                 }
-                <button type="button" id="bookmark-toggle-btn" class="icon-toggle-btn" aria-label="Bookmark this page" title="Bookmark (B)">
+                <button type="button" id="tts-toggle" class="tts-toggle-btn" aria-pressed="false" title="Read aloud (A)" data-i18n-title="tts.toggleTitle">
+                    <span aria-hidden="true">&#127911;</span>
+                    <span class="tts-toggle-label" data-i18n="tts.toggle">Audio</span>
+                </button>
+                <button type="button" id="bookmark-toggle-btn" class="icon-toggle-btn" aria-label="Bookmark this page" title="Bookmark this page (B)" data-i18n-aria="reader.bookmarkTitle" data-i18n-title="reader.bookmarkTitle">
                     <span aria-hidden="true">&#9733;</span>
                 </button>
-                <button type="button" id="sidebar-right-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Settings" aria-controls="sidebar-right" aria-expanded="false">
+                <button type="button" id="sidebar-right-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Settings" data-i18n-aria="reader.settings" aria-controls="sidebar-right" aria-expanded="false">
                     <span aria-hidden="true">&#9881;</span>
                 </button>
             </div>
@@ -89,7 +111,7 @@
         @if (Model.LandingChapterId is null)
         {
             <div class="reader-empty-state">
-                <p>Không đọc được nội dung file này - file có thể bị hỏng hoặc không đúng định dạng.</p>
+                <p data-i18n="reader.emptyContent">This file could not be read - it may be damaged or in an unsupported format.</p>
             </div>
         }
         else
@@ -106,8 +128,8 @@
                 <div class="translation-view" id="translation-view" hidden>
                     <div class="translation-grid" id="translation-grid"></div>
                     <div class="translation-view-nav">
-                        <button type="button" id="tr-prev-chapter-btn" class="chapter-nav-btn">&#8249; Chương trước</button>
-                        <button type="button" id="tr-next-chapter-btn" class="chapter-nav-btn">Chương sau &#8250;</button>
+                        <button type="button" id="tr-prev-chapter-btn" class="chapter-nav-btn" data-i18n="tr.prevChapter">&#8249; Previous chapter</button>
+                        <button type="button" id="tr-next-chapter-btn" class="chapter-nav-btn" data-i18n="tr.nextChapter">Next chapter &#8250;</button>
                     </div>
                 </div>
             }
@@ -116,19 +138,27 @@
 
     <aside id="sidebar-right" class="sidebar sidebar-right">
         <div class="sidebar-header">
-            <span class="sidebar-header-title">Settings</span>
-            <button type="button" class="sidebar-close-btn" aria-label="Close" data-close-sidebar>&times;</button>
+            <span class="sidebar-header-title" data-i18n="reader.settings">Settings</span>
+            <button type="button" class="sidebar-close-btn" aria-label="Close" data-i18n-aria="reader.close" data-close-sidebar>&times;</button>
         </div>
 
         <div class="sidebar-section">
-            <label class="settings-label">Dark Mode</label>
+            <label class="settings-label" data-i18n="setting.darkMode">Dark Mode</label>
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="setting-dark-mode" checked>
             </div>
         </div>
 
         <div class="sidebar-section">
-            <label class="settings-label" for="setting-font">Font</label>
+            <label class="settings-label" for="setting-language" data-i18n="setting.language">Language</label>
+            <select id="setting-language" class="form-select form-select-sm settings-input">
+                <option value="en">English</option>
+                <option value="vi">Ti&#7871;ng Vi&#7879;t</option>
+            </select>
+        </div>
+
+        <div class="sidebar-section">
+            <label class="settings-label" for="setting-font" data-i18n="setting.font">Font</label>
             <select id="setting-font" class="form-select form-select-sm settings-input">
                 <option value="'Times New Roman', Times, serif" selected>Times New Roman</option>
                 <option value="Georgia, serif">Georgia</option>
@@ -138,27 +168,58 @@
         </div>
 
         <div class="sidebar-section">
-            <label class="settings-label" for="setting-font-size"><span>Font Size</span> <span id="setting-font-size-val">18px</span></label>
+            <label class="settings-label" for="setting-font-size"><span data-i18n="setting.fontSize">Font Size</span> <span id="setting-font-size-val">18px</span></label>
             <input type="range" min="12" max="32" step="1" id="setting-font-size" value="18" class="form-range">
         </div>
 
         <div class="sidebar-section">
-            <label class="settings-label" for="setting-line-height"><span>Line Height</span> <span id="setting-line-height-val">1.75</span></label>
+            <label class="settings-label" for="setting-line-height"><span data-i18n="setting.lineHeight">Line Height</span> <span id="setting-line-height-val">1.75</span></label>
             <input type="range" min="1.2" max="2.4" step="0.1" id="setting-line-height" value="1.75" class="form-range">
         </div>
 
         <div class="sidebar-section">
-            <label class="settings-label" for="setting-letter-spacing"><span>Letter Spacing</span> <span id="setting-letter-spacing-val">0em</span></label>
+            <label class="settings-label" for="setting-letter-spacing"><span data-i18n="setting.letterSpacing">Letter Spacing</span> <span id="setting-letter-spacing-val">0em</span></label>
             <input type="range" min="0" max="0.3" step="0.01" id="setting-letter-spacing" value="0" class="form-range">
         </div>
+
+        <div class="sidebar-section" id="tts-voice-section">
+            <label class="settings-label" for="setting-tts-voice" data-i18n="setting.ttsVoice">TTS Voice</label>
+            <select id="setting-tts-voice" class="form-select form-select-sm settings-input">
+                <option value="auto" data-i18n="tts.voiceAuto">Auto (recommended)</option>
+            </select>
+        </div>
     </aside>
+
+    <div id="reader-tts-player" class="reader-tts-player" hidden role="region" aria-label="Read aloud" data-i18n-aria="tts.toggleTitle">
+        <div class="tts-player-inner">
+            <button type="button" id="tts-prev" class="tts-btn tts-btn-icon" title="Previous paragraph" aria-label="Previous paragraph" data-i18n-title="tts.prev" data-i18n-aria="tts.prev">&#9198;</button>
+            <button type="button" id="tts-play" class="tts-btn tts-btn-icon tts-btn-primary" title="Play / Pause" aria-label="Play / Pause" data-i18n-title="tts.playPause" data-i18n-aria="tts.playPause">&#9654;</button>
+            <button type="button" id="tts-next" class="tts-btn tts-btn-icon" title="Next paragraph" aria-label="Next paragraph" data-i18n-title="tts.next" data-i18n-aria="tts.next">&#9197;</button>
+            <span class="tts-divider"></span>
+            <div class="tts-speed-selector">
+                <button type="button" id="tts-speed-btn" class="tts-btn tts-btn-speed" title="Speech speed" aria-label="Speech speed" data-i18n-title="tts.speed" data-i18n-aria="tts.speed">1x</button>
+                <div id="tts-speed-menu" class="tts-speed-menu" hidden>
+                    <button type="button" class="tts-speed-option" data-speed="0.75">0.75x</button>
+                    <button type="button" class="tts-speed-option" data-speed="1">1x</button>
+                    <button type="button" class="tts-speed-option" data-speed="1.25">1.25x</button>
+                    <button type="button" class="tts-speed-option" data-speed="1.5">1.5x</button>
+                    <button type="button" class="tts-speed-option" data-speed="2">2x</button>
+                </div>
+            </div>
+            <span class="tts-divider"></span>
+            <button type="button" id="tts-stop" class="tts-btn tts-btn-close" title="Close player" aria-label="Close player" data-i18n-title="tts.stop" data-i18n-aria="tts.stop">&times;</button>
+        </div>
+    </div>
 
     <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
 </div>
 
+<script id="app-settings" type="application/json">@Html.Raw(appSettingsJson)</script>
 <script id="reader-bootstrap-data" type="application/json">@Html.Raw(bootstrapJson)</script>
 
 @section Scripts {
+    <script src="~/js/i18n.js" asp-append-version="true"></script>
     <script src="~/js/reader.js" asp-append-version="true"></script>
     <script src="~/js/reader-quick-translate.js" asp-append-version="true"></script>
+    <script src="~/js/reader-tts.js" asp-append-version="true"></script>
 }

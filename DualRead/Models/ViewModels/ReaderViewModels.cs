@@ -14,6 +14,8 @@ public class ReaderBundleViewModel
     public string LandingChapterHtml { get; set; } = string.Empty;
     public List<BookmarkSummary> Bookmarks { get; set; } = new();
     public bool CanTranslate { get; set; }
+    public bool CanSaveSettings { get; set; }
+    public SettingsViewModel Settings { get; set; } = new();
     public bool TranslationModeOn { get; set; }
 }
 

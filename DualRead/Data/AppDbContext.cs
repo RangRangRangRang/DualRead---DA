@@ -16,6 +16,9 @@ public class AppDbContext : DbContext
     public DbSet<RecoveryKey> RecoveryKeys => Set<RecoveryKey>();
     public DbSet<VocabularyItem> VocabularyItems => Set<VocabularyItem>();
     public DbSet<Translation> Translations => Set<Translation>();
+    public DbSet<Album> Albums => Set<Album>();
+    public DbSet<AlbumBook> AlbumBooks => Set<AlbumBook>();
+    public DbSet<Settings> Settings => Set<Settings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,6 +77,39 @@ public class AppDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(t => new { t.ChapterId, t.ParagraphIndex }).IsUnique();
+        });
+
+        modelBuilder.Entity<Album>(entity =>
+        {
+            entity.HasOne(a => a.RecoveryKey)
+                  .WithMany()
+                  .HasForeignKey(a => a.RecoveryKeyId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(a => a.RecoveryKeyId);
+        });
+
+        modelBuilder.Entity<AlbumBook>(entity =>
+        {
+            entity.HasKey(ab => new { ab.AlbumId, ab.BookId });
+
+            entity.HasOne(ab => ab.Album)
+                  .WithMany(a => a.AlbumBooks)
+                  .HasForeignKey(ab => ab.AlbumId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ab => ab.Book)
+                  .WithMany()
+                  .HasForeignKey(ab => ab.BookId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Settings>(entity =>
+        {
+            entity.HasOne(s => s.RecoveryKey)
+                  .WithOne()
+                  .HasForeignKey<Settings>(s => s.RecoveryKeyId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Bookmark>(entity =>

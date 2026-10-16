@@ -11,11 +11,13 @@ public class LibraryController : Controller
 
     private readonly IBookService _bookService;
     private readonly ICurrentRecoveryKeyAccessor _currentRecoveryKeyAccessor;
+    private readonly ISettingsService _settingsService;
 
-    public LibraryController(IBookService bookService, ICurrentRecoveryKeyAccessor currentRecoveryKeyAccessor)
+    public LibraryController(IBookService bookService, ICurrentRecoveryKeyAccessor currentRecoveryKeyAccessor, ISettingsService settingsService)
     {
         _bookService = bookService;
         _currentRecoveryKeyAccessor = currentRecoveryKeyAccessor;
+        _settingsService = settingsService;
     }
 
     [HttpGet]
@@ -30,6 +32,7 @@ public class LibraryController : Controller
         var books = await _bookService.GetLibraryAsync(recoveryKey.Id);
         var viewModel = new LibraryViewModel { Books = books };
         ViewBag.RecoveryKeyCode = recoveryKey.Code;
+        ViewBag.Language = (await _settingsService.GetAsync(recoveryKey.Id)).Language;
         return View(viewModel);
     }
 

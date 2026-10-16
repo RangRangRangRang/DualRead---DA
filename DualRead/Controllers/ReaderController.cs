@@ -21,6 +21,7 @@ public class ReaderController : Controller
     private readonly ITranslationService _translationService;
     private readonly ITranslationExportService _translationExportService;
     private readonly ICurrentRecoveryKeyAccessor _currentRecoveryKeyAccessor;
+    private readonly ISettingsService _settingsService;
 
     public ReaderController(
         IBookService bookService,
@@ -31,7 +32,8 @@ public class ReaderController : Controller
         IBookmarkService bookmarkService,
         ITranslationService translationService,
         ITranslationExportService translationExportService,
-        ICurrentRecoveryKeyAccessor currentRecoveryKeyAccessor)
+        ICurrentRecoveryKeyAccessor currentRecoveryKeyAccessor,
+        ISettingsService settingsService)
     {
         _bookService = bookService;
         _epubParsingService = epubParsingService;
@@ -42,6 +44,7 @@ public class ReaderController : Controller
         _translationService = translationService;
         _translationExportService = translationExportService;
         _currentRecoveryKeyAccessor = currentRecoveryKeyAccessor;
+        _settingsService = settingsService;
     }
 
     [HttpGet("{id:guid}")]
@@ -75,6 +78,10 @@ public class ReaderController : Controller
             }).ToList(),
             Bookmarks = bookmarks.Select(ToSummary).ToList(),
             CanTranslate = canTranslate,
+            CanSaveSettings = recoveryKey is not null,
+            Settings = recoveryKey is null
+                ? new SettingsViewModel()
+                : SettingsViewModel.From(await _settingsService.GetAsync(recoveryKey.Id)),
             TranslationModeOn = canTranslate && (progress?.TranslationModeOn ?? false)
         };
 

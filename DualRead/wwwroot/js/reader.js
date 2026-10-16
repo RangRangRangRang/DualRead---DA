@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
+    function t(key, params) {
+        return window.DualReadI18n ? window.DualReadI18n.t(key, params) : key;
+    }
+
+    function statusHtml(key) {
+        return '<p class="tr-status" data-i18n="' + key + '">' + t(key) + '</p>';
+    }
+
     var bootstrapEl = document.getElementById('reader-bootstrap-data');
     var bootstrap = bootstrapEl
         ? JSON.parse(bootstrapEl.textContent)
@@ -152,6 +160,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 currentChapterId = chapterId;
                 pageTrack.innerHTML = data.html;
                 setActiveChapterListItem(chapterId);
+                document.dispatchEvent(new CustomEvent('dualread:chapterchange'));
 
                 currentPage = 0;
 
@@ -174,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(function (err) {
                 console.error('Chapter load error:', err);
-                alert('Could not load this chapter. Please try again.');
+                alert(t('err.chapter'));
             });
     }
 
@@ -203,11 +212,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         saveStatusEl.classList.remove('error');
         if (state === 'saving') {
-            saveStatusEl.textContent = 'Đang lưu...';
+            saveStatusEl.textContent = t('tr.saving');
         } else if (state === 'saved') {
-            saveStatusEl.textContent = 'Đã lưu';
+            saveStatusEl.textContent = t('tr.saved');
         } else if (state === 'error') {
-            saveStatusEl.textContent = 'Lỗi lưu, thử lại';
+            saveStatusEl.textContent = t('tr.saveError');
             saveStatusEl.classList.add('error');
         } else {
             saveStatusEl.textContent = '';
@@ -309,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 textarea.className = 'tr-textarea';
                 textarea.setAttribute('data-p-index', index);
                 textarea.rows = 1;
-                textarea.placeholder = 'Nhập bản dịch...';
+                textarea.placeholder = t('tr.placeholder');
                 textarea.value = savedByIndex[index] || '';
 
                 textarea.addEventListener('input', function () {
@@ -337,12 +346,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (rowCount === 0) {
-            translationGrid.innerHTML = '<p class="tr-status">Chương này không có đoạn văn bản nào để dịch.</p>';
+            translationGrid.innerHTML = statusHtml('tr.noParagraphs');
             return;
         }
 
         autoResizeAllTextareas();
         translationView.scrollTop = 0;
+        document.dispatchEvent(new CustomEvent('dualread:modechange'));
     }
 
     function renderTranslationView() {
@@ -351,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var chapterId = currentChapterId;
         var token = ++translationBuildToken;
 
-        translationGrid.innerHTML = '<p class="tr-status">Đang tải bản dịch...</p>';
+        translationGrid.innerHTML = statusHtml('tr.loading');
 
         fetch('/Reader/' + bootstrap.bookId + '/Chapter/' + chapterId + '/Translations')
             .then(function (res) {
@@ -365,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(function (err) {
                 console.error('Translation load error:', err);
                 if (token !== translationBuildToken) return;
-                translationGrid.innerHTML = '<p class="tr-status">Không tải được bản dịch. Hãy mở lại thư viện bằng Recovery Key của bạn.</p>';
+                translationGrid.innerHTML = statusHtml('tr.loadError');
             });
     }
 
@@ -397,6 +407,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (saveStatusEl) saveStatusEl.hidden = true;
             recalculatePagination();
         }
+
+        document.dispatchEvent(new CustomEvent('dualread:modechange'));
 
         if (!silent) {
             scheduleProgressSave();
@@ -447,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function () {
         label.className = 'bookmark-preview-text';
         label.textContent = bookmark.previewText && bookmark.previewText.length > 0
             ? bookmark.previewText
-            : 'Trang ' + (bookmark.page + 1);
+            : t('reader.pageLabel', { n: bookmark.page + 1 });
 
         var del = document.createElement('button');
         del.type = 'button';
@@ -486,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(function (err) {
                 console.error('Bookmark add error:', err);
-                alert('Could not add bookmark. Please try again.');
+                alert(t('err.bookmarkAdd'));
             });
     }
 
@@ -503,13 +515,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     var hint = document.createElement('li');
                     hint.id = 'bookmark-empty-hint';
                     hint.className = 'sidebar-list-empty';
-                    hint.textContent = 'Chưa có bookmark nào. Nhấn phím B hoặc bấm nút đánh dấu để lưu trang này.';
+                    hint.setAttribute('data-i18n', 'reader.bookmarkEmpty');
+                    hint.textContent = t('reader.bookmarkEmpty');
                     bookmarkList.appendChild(hint);
                 }
             })
             .catch(function (err) {
                 console.error('Bookmark delete error:', err);
-                alert('Could not delete bookmark. Please try again.');
+                alert(t('err.bookmarkDelete'));
             });
     }
 
@@ -679,6 +692,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fontSizeInput.value = newValue;
         applyFontSize(newValue);
         afterLayoutSettingChange();
+        scheduleSettingsSave();
     }
 
     function applyFontSize(px) {
@@ -735,6 +749,210 @@ document.addEventListener('DOMContentLoaded', function () {
         letterSpacingInput.addEventListener('change', afterLayoutSettingChange);
     }
 
+    var languageSelect = document.getElementById('setting-language');
+    var settingsSaveTimeout = null;
+    var canSaveSettings = !!bootstrap.canSaveSettings;
+
+    function currentSettingsSnapshot() {
+        return {
+            darkMode: darkModeToggle ? darkModeToggle.checked : true,
+            language: languageSelect ? languageSelect.value : 'en',
+            font: fontSelect ? fontSelect.value : null,
+            fontSize: fontSizeInput ? parseInt(fontSizeInput.value, 10) : null,
+            lineHeight: lineHeightInput ? parseFloat(lineHeightInput.value) : null,
+            letterSpacing: letterSpacingInput ? parseFloat(letterSpacingInput.value) : null
+        };
+    }
+
+    function scheduleSettingsSave() {
+        if (!canSaveSettings) return;
+
+        clearTimeout(settingsSaveTimeout);
+        settingsSaveTimeout = setTimeout(function () {
+            fetch('/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentSettingsSnapshot()),
+                keepalive: true
+            }).catch(function (err) {
+                console.error('Settings save error:', err);
+            });
+        }, 600);
+    }
+
+    function applyTheme(isDark) {
+        document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
+        document.body.classList.toggle('theme-light', !isDark);
+    }
+
+    function applyInitialSettings() {
+        var saved = bootstrap.settings;
+        if (!saved) return;
+
+        if (darkModeToggle) {
+            darkModeToggle.checked = saved.darkMode !== false;
+            applyTheme(darkModeToggle.checked);
+        }
+
+        if (languageSelect) {
+            languageSelect.value = saved.language || 'en';
+        }
+
+        if (fontSelect && saved.font) {
+            var hasFont = Array.prototype.some.call(fontSelect.options, function (option) {
+                return option.value === saved.font;
+            });
+            if (hasFont) {
+                fontSelect.value = saved.font;
+                getStyledTargets().forEach(function (el) { el.style.fontFamily = saved.font; });
+            }
+        }
+
+        if (fontSizeInput && saved.fontSize) {
+            fontSizeInput.value = saved.fontSize;
+            applyFontSize(parseInt(fontSizeInput.value, 10));
+        }
+
+        if (lineHeightInput && saved.lineHeight) {
+            lineHeightInput.value = saved.lineHeight;
+            var lineHeightValue = parseFloat(lineHeightInput.value);
+            getStyledTargets().forEach(function (el) { el.style.lineHeight = lineHeightValue; });
+            var lineHeightLabel = document.getElementById('setting-line-height-val');
+            if (lineHeightLabel) lineHeightLabel.textContent = lineHeightValue.toFixed(2).replace(/0$/, '').replace(/\.$/, '');
+        }
+
+        if (letterSpacingInput && saved.letterSpacing !== undefined && saved.letterSpacing !== null) {
+            letterSpacingInput.value = saved.letterSpacing;
+            var letterSpacingValue = parseFloat(letterSpacingInput.value);
+            getStyledTargets().forEach(function (el) { el.style.letterSpacing = letterSpacingValue + 'em'; });
+            var letterSpacingLabel = document.getElementById('setting-letter-spacing-val');
+            if (letterSpacingLabel) letterSpacingLabel.textContent = letterSpacingValue.toFixed(2) + 'em';
+        }
+    }
+
+    if (languageSelect) {
+        languageSelect.addEventListener('change', function () {
+            if (window.DualReadI18n) window.DualReadI18n.setLanguage(languageSelect.value);
+            languageSelect.blur();
+        });
+    }
+
+    ['setting-dark-mode', 'setting-font', 'setting-font-size', 'setting-line-height', 'setting-letter-spacing', 'setting-language'].forEach(function (id) {
+        var control = document.getElementById(id);
+        if (control) control.addEventListener('change', scheduleSettingsSave);
+    });
+
+    document.addEventListener('dualread:languagechange', function () {
+        if (translationGrid) {
+            translationGrid.querySelectorAll('.tr-textarea').forEach(function (textarea) {
+                textarea.placeholder = t('tr.placeholder');
+            });
+        }
+        if (languageSelect && window.DualReadI18n) {
+            languageSelect.value = window.DualReadI18n.getLanguage();
+        }
+    });
+
+    function clearTtsHighlight() {
+        document.querySelectorAll('.tts-highlight-active').forEach(function (el) {
+            el.classList.remove('tts-highlight-active');
+        });
+    }
+
+    function getParagraphNodes() {
+        return Array.prototype.filter.call(pageTrack.querySelectorAll('p[data-p-index]'), function (p) {
+            return (p.textContent || '').trim().length > 0;
+        });
+    }
+
+    function revealParagraphPage(paragraph) {
+        if (!pageFrame || pageStep <= 0) return;
+
+        var frameRect = pageFrame.getBoundingClientRect();
+        var rect = paragraph.getBoundingClientRect();
+        var deltaPages = Math.floor((rect.left - frameRect.left + 1) / pageStep);
+        if (deltaPages === 0) return;
+
+        currentPage = Math.min(Math.max(currentPage + deltaPages, 0), totalPages - 1);
+        applyPageTransform();
+        onPositionChanged();
+    }
+
+    function firstVisibleParagraphIndex() {
+        var nodes = getParagraphNodes();
+        if (nodes.length === 0) return 0;
+
+        var i;
+        var rect;
+
+        if (translationModeOn) {
+            var viewRect = translationView.getBoundingClientRect();
+            var originals = translationGrid.querySelectorAll('.tr-original');
+            for (i = 0; i < originals.length; i++) {
+                rect = originals[i].getBoundingClientRect();
+                if (rect.bottom > viewRect.top + 4) {
+                    return Number(originals[i].getAttribute('data-p-index'));
+                }
+            }
+            return Number(nodes[0].getAttribute('data-p-index'));
+        }
+
+        var frameRect = pageFrame.getBoundingClientRect();
+        for (i = 0; i < nodes.length; i++) {
+            rect = nodes[i].getBoundingClientRect();
+            if (rect.left >= frameRect.left - 2 && rect.left < frameRect.right - 2) {
+                return Number(nodes[i].getAttribute('data-p-index'));
+            }
+        }
+        for (i = 0; i < nodes.length; i++) {
+            rect = nodes[i].getBoundingClientRect();
+            if (rect.right > frameRect.left) {
+                return Number(nodes[i].getAttribute('data-p-index'));
+            }
+        }
+        return Number(nodes[0].getAttribute('data-p-index'));
+    }
+
+    window.DualReadReader = {
+        isTranslationMode: function () { return translationModeOn; },
+        getCurrentChapterId: function () { return currentChapterId; },
+        getParagraphs: function () {
+            return getParagraphNodes().map(function (p) {
+                return {
+                    index: Number(p.getAttribute('data-p-index')),
+                    text: (p.textContent || '').replace(/\s+/g, ' ').trim()
+                };
+            });
+        },
+        getFirstVisibleParagraphIndex: firstVisibleParagraphIndex,
+        highlightParagraph: function (index) {
+            clearTtsHighlight();
+            if (translationModeOn) {
+                var original = translationGrid.querySelector('.tr-original[data-p-index="' + index + '"]');
+                if (original) {
+                    original.classList.add('tts-highlight-active');
+                    if (original.scrollIntoView) original.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }
+            } else {
+                var paragraph = pageTrack.querySelector('p[data-p-index="' + index + '"]');
+                if (paragraph) {
+                    paragraph.classList.add('tts-highlight-active');
+                    revealParagraphPage(paragraph);
+                }
+            }
+        },
+        clearHighlight: clearTtsHighlight,
+        hasNextChapter: function () {
+            var index = findChapterIndex(currentChapterId);
+            return index !== -1 && index < chapters.length - 1;
+        },
+        goToNextChapter: function () {
+            var index = findChapterIndex(currentChapterId);
+            if (index === -1 || index >= chapters.length - 1) return Promise.resolve();
+            return loadChapter(chapters[index + 1].id, 'first');
+        }
+    };
+
     var resizeTimeout = null;
     window.addEventListener('resize', function () {
         clearTimeout(resizeTimeout);
@@ -746,6 +964,8 @@ document.addEventListener('DOMContentLoaded', function () {
         saveProgressNow();
         flushTranslationSaves(true);
     });
+
+    applyInitialSettings();
 
     if (pageFrame && pageTrack) {
         recalculatePagination();

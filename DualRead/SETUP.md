@@ -86,3 +86,27 @@ dotnet run
 Cách dùng: mở một sách của chính thư viện mình (đang dùng đúng Recovery Key), bấm nút "Dịch" ở thanh trên hoặc nhấn phím T. Mỗi đoạn văn hiện cạnh một ô nhập, gõ bản dịch là tự lưu sau khoảng 0,8 giây. Nút "Xuất bản dịch" tải file .docx gồm các đoạn đã dịch theo từng chương. Bôi đen chữ ở cột nguyên văn vẫn dùng được Dịch nhanh.
 
 Giới hạn đã biết: ở chế độ Dịch, cột nguyên văn chỉ hiện các đoạn chữ và tiêu đề (ảnh trong chương bị ẩn), nội dung cuộn dọc thay vì lật trang, và bookmark bị tắt cho tới khi quay lại chế độ đọc.
+
+## Cập nhật Tuần 7 (Album, Đọc to, EN/VI, lưu cài đặt, triển khai)
+
+Tuần 7 thêm 3 bảng mới: `Albums`, `AlbumBooks`, `Settings`. Đều là bảng mới nên không cần xóa database.
+
+```bash
+dotnet ef migrations add AddAlbumsAndSettings
+dotnet run
+```
+
+Cách dùng:
+- **Album:** trong Thư viện có tab "Album". Bấm nút "Album" trên một thẻ sách để chọn sách thuộc album nào (có thể tạo album mới ngay trong cửa sổ đó). Xóa album không xóa sách bên trong.
+- **Đọc to:** trong Reader bấm nút "Âm thanh" hoặc nhấn phím **A**. Đọc từng đoạn, có tạm dừng, đoạn trước/sau, tốc độ 0.75x-2x; đọc hết chương sẽ tự sang chương sau. Chọn giọng đọc ở thanh cài đặt bên phải. Tốc độ và giọng đọc lưu trên trình duyệt (localStorage), không đồng bộ qua Recovery Key. Trình duyệt không hỗ trợ giọng nói thì nút tự ẩn.
+- **Đổi ngôn ngữ EN/VI:** nút EN | VI ở đầu Thư viện hoặc ô Language ở cài đặt Reader. Chỉ đổi chữ giao diện (nhãn, tooltip, thông báo), không đổi nội dung sách.
+- **Lưu cài đặt Reader:** chế độ tối, phông chữ, cỡ chữ, giãn dòng, khoảng cách chữ, ngôn ngữ được lưu theo Recovery Key và tự khôi phục khi mở lại.
+
+### Triển khai lên Render (miễn phí)
+
+1. Đảm bảo thư mục `Migrations/` đã được commit, và `.gitignore` có dòng `Uploads/`.
+2. Đẩy repo lên GitHub (file `render.yaml` nằm ở thư mục gốc repo, cùng cấp với `DualRead.sln`).
+3. Trên Render chọn New > Blueprint, trỏ vào repo. Render tự tạo web service (Docker) và database PostgreSQL theo `render.yaml`.
+4. `Program.cs` tự nhận biến `DATABASE_URL` và `PORT`, không cần sửa code. Khi khởi động, `MigrateAsync()` tự tạo bảng.
+
+Giới hạn cần ghi trong báo cáo: thư mục `Uploads/` nằm trên ổ đĩa tạm của Render, nên sách đã tải lên sẽ mất sau mỗi lần deploy hoặc khởi động lại (bản ghi trong database vẫn còn nhưng file thì không). Web service và database gói miễn phí có giới hạn của Render (ngủ khi không dùng, database có thời hạn), hãy kiểm tra điều khoản hiện hành trước khi demo.

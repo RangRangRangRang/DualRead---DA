@@ -1,4 +1,5 @@
 using DualRead.Data;
+using Microsoft.AspNetCore.HttpOverrides;
 using DualRead.Services;
 using DualRead.Services.Implementations;
 using DualRead.Services.Interfaces;
@@ -23,6 +24,12 @@ if (!string.IsNullOrWhiteSpace(port))
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 
@@ -40,8 +47,12 @@ builder.Services.AddScoped<IReadingProgressService, ReadingProgressService>();
 builder.Services.AddScoped<IVocabularyService, VocabularyService>();
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ITranslationExportService, TranslationExportService>();
+builder.Services.AddScoped<IAlbumService, AlbumService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
