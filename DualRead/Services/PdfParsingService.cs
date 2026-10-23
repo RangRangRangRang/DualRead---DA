@@ -87,7 +87,12 @@ public class PdfParsingService : IPdfParsingService
             {
                 sb.Append("<div class=\"pdf-page-marker\"><small>Trang ").Append(pageNum).Append('/').Append(totalPages).Append("</small></div>");
             }
-            foreach (var paragraph in SplitIntoParagraphs(text))
+            var paragraphs = SplitIntoParagraphs(text).ToList();
+            if (paragraphs.Count == 0)
+            {
+                sb.Append("<div class=\"pdf-page-marker\"><small><em>Trang này không có văn bản (có thể là ảnh quét) / No text on this page</em></small></div>");
+            }
+            foreach (var paragraph in paragraphs)
             {
                 sb.Append("<p>").Append(WebUtility.HtmlEncode(paragraph)).Append("</p>");
             }

@@ -5,16 +5,18 @@
 }
 
 <div class="library-page">
-    <div class="library-header">
-        <div class="library-title-nav">
+    <div class="lib-head">
+        <div class="lib-head-top">
             <h1 class="library-main-title">
                 <span data-i18n="lib.title">Library</span>
                 <span class="library-title-sep">/</span>
                 <span class="library-sub-title" data-i18n="lib.allBooks" data-i18n-params='{"n":@Model.TotalCount}'>All books (@Model.TotalCount)</span>
             </h1>
+            <a id="btn-upload-header" class="lib-btn lib-btn-primary lib-head-upload" asp-controller="Home" asp-action="Index">
+                <span data-i18n="lib.upload">+ Upload</span>
+            </a>
         </div>
-
-        <div class="library-header-actions">
+        <div class="lib-head-tools">
             <div class="lang-segmented-control" role="group" data-i18n-aria="lib.langAria" aria-label="Language">
                 <button type="button" class="lang-seg-btn @(currentLang == "en" ? "active" : "")" data-lang="en">EN</button>
                 <button type="button" class="lang-seg-btn @(currentLang == "vi" ? "active" : "")" data-lang="vi">VI</button>
@@ -27,9 +29,6 @@
                 <span data-i18n="lib.vocab">Vocabulary</span>
                 <span id="vocab-count-badge" class="lib-tab-count">0</span>
             </button>
-            <a id="btn-upload-header" class="lib-btn lib-btn-primary" asp-controller="Home" asp-action="Index">
-                <span data-i18n="lib.upload">+ Upload</span>
-            </a>
         </div>
     </div>
 
@@ -82,52 +81,97 @@
         }
         else
         {
-            <div class="book-grid">
-                @foreach (var book in Model.Books)
-                {
-                    var formatCode = book.Type.ToString().ToLowerInvariant();
+            <div class="library-toolbar">
+                <div class="library-search-box">
+                    <svg class="library-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="search" id="library-search-input" class="library-search-input" autocomplete="off" data-i18n-placeholder="lib.searchPlaceholder" placeholder="Search title or author..." />
+                    <button type="button" id="library-search-clear" class="library-search-clear" data-i18n-aria="lib.searchClear" aria-label="Clear search" hidden>&times;</button>
+                </div>
+                <div class="library-toolbar-actions">
+                    <select id="library-sort-select" class="library-sort-select" data-i18n-aria="lib.sortAria" aria-label="Sort books">
+                        <option value="newest" data-i18n="lib.sortNewest">Newest</option>
+                        <option value="oldest" data-i18n="lib.sortOldest">Oldest</option>
+                        <option value="title" data-i18n="lib.sortTitle">Title A-Z</option>
+                        <option value="titleDesc" data-i18n="lib.sortTitleDesc">Title Z-A</option>
+                        <option value="author" data-i18n="lib.sortAuthor">Author A-Z</option>
+                    </select>
+                    <div class="library-view-toggle" role="group" data-i18n-aria="lib.viewAria" aria-label="View mode">
+                        <button type="button" class="library-view-btn active" data-view="grid" data-i18n-title="lib.viewGrid" title="Grid view" aria-pressed="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
+                        </button>
+                        <button type="button" class="library-view-btn" data-view="list" data-i18n-title="lib.viewList" title="List view" aria-pressed="false">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="book-card" data-book-id="@book.Id">
-                        <div class="book-cover-link">
-                            <div class="book-cover">
-                                @if (!string.IsNullOrEmpty(book.CoverImagePath))
-                                {
-                                    <img src="@book.CoverImagePath" alt="@book.Title" />
-                                }
-                                else
-                                {
-                                    <div class="book-cover-placeholder"></div>
-                                }
-                                <span class="book-type-badge format-badge-@formatCode">@book.Type</span>
+            <div id="library-sections" class="library-sections-container">
+                @foreach (var groupType in new[] { BookType.Epub, BookType.Pdf, BookType.Docx })
+                {
+                    var groupBooks = Model.Books.Where(b => b.Type == groupType).ToList();
+                    if (groupBooks.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    var formatCode = groupType.ToString().ToLowerInvariant();
+
+                    <div class="library-format-section" data-format="@formatCode">
+                        <div class="library-format-header">
+                            <div class="library-format-title-group">
+                                <h2 class="library-format-heading" data-i18n="@("lib.group." + formatCode)">@groupType.ToString().ToUpperInvariant() books</h2>
+                                <span class="library-format-count">(@groupBooks.Count)</span>
                             </div>
-                            <div class="book-title" title="@book.Title">@book.Title</div>
-                            <div class="book-author">@(string.IsNullOrEmpty(book.Author) ? "\u00A0" : book.Author)</div>
+                            <div class="library-format-line"></div>
                         </div>
-                        <div class="book-card-actions">
-                            <a class="book-card-action-btn book-read-btn" asp-controller="Reader" asp-action="Index" asp-route-id="@book.Id">
-                                <span class="action-label" data-i18n="lib.read">Read</span>
-                            </a>
-                            <button type="button" class="book-card-action-btn book-albums-btn" data-book-id="@book.Id" data-i18n-title="lib.addAlbumTitle" title="Add to album">
-                                <span class="action-label" data-i18n="lib.addAlbum">Album</span>
-                            </button>
-                            <button type="button" class="book-card-action-btn book-rename-btn"
-                                    data-book-id="@book.Id"
-                                    data-book-title="@book.Title"
-                                    data-book-author="@(book.Author ?? "")"
-                                    data-i18n-title="lib.renameTitle"
-                                    title="Rename book">
-                                <span class="action-label" data-i18n="lib.rename">Rename</span>
-                            </button>
-                            <form asp-controller="Library" asp-action="Delete" method="post" class="book-card-action-form book-delete-form">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@book.Id" />
-                                <button type="submit" class="book-card-action-btn book-delete-btn" data-i18n-title="lib.deleteTitle" title="Delete book">
-                                    <span class="action-label" data-i18n="lib.delete">Delete</span>
-                                </button>
-                            </form>
+                        <div class="bk-grid">
+                            @foreach (var book in groupBooks)
+                            {
+                                var started = Model.StartedBookIds.Contains(book.Id);
+
+                                <article class="bk-card" data-book-id="@book.Id" data-title="@book.Title" data-author="@(book.Author ?? "")" data-uploaded="@book.UploadedAtUtc.ToString("o")">
+                                    <div class="bk-cover">
+                                        @if (!string.IsNullOrEmpty(book.CoverImagePath))
+                                        {
+                                            <img src="@book.CoverImagePath" alt="@book.Title" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <div class="bk-placeholder"></div>
+                                        }
+                                    </div>
+                                    <span class="bk-badge format-badge format-badge-@formatCode">@book.Type</span>
+                                    <div class="bk-info">
+                                        <h3 class="bk-title" title="@book.Title">@book.Title</h3>
+                                        <div class="bk-author">@(string.IsNullOrEmpty(book.Author) ? "\u00A0" : book.Author)</div>
+                                        <span class="bk-status @(started ? "is-reading" : "")" data-i18n="@(started ? "lib.statusReading" : "lib.statusUnread")">@(started ? "Reading" : "Not started")</span>
+                                    </div>
+                                    <div class="bk-actions">
+                                        <a class="bk-act bk-act-primary book-read-btn" asp-controller="Reader" asp-action="Index" asp-route-id="@book.Id" data-i18n="lib.read">Read</a>
+                                        <button type="button" class="bk-act book-albums-btn" data-book-id="@book.Id" data-i18n="lib.addAlbum" data-i18n-title="lib.addAlbumTitle" title="Add to album">Album</button>
+                                        <button type="button" class="bk-act book-rename-btn"
+                                                data-book-id="@book.Id"
+                                                data-book-title="@book.Title"
+                                                data-book-author="@(book.Author ?? "")"
+                                                data-i18n="lib.rename"
+                                                data-i18n-title="lib.renameTitle"
+                                                title="Rename book">Rename</button>
+                                        <form asp-controller="Library" asp-action="Delete" method="post" class="bk-delete-form book-delete-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@book.Id" />
+                                            <button type="submit" class="bk-act bk-act-danger book-delete-btn" data-i18n="lib.delete" data-i18n-title="lib.deleteTitle" title="Delete book">Delete</button>
+                                        </form>
+                                    </div>
+                                </article>
+                            }
                         </div>
                     </div>
                 }
+            </div>
+
+            <div id="library-no-results" class="library-empty-box" hidden>
+                <p class="text-secondary" data-i18n="lib.noResults">No matching books.</p>
             </div>
         }
     </section>
@@ -138,7 +182,7 @@
                 <span data-i18n="album.create">+ New album</span>
             </button>
         </div>
-        <div id="albums-banner-stack" class="albums-banner-stack"></div>
+        <div id="albums-banner-stack" class="alb-stack"></div>
         <div id="albums-empty-state" class="albums-empty-state" hidden>
             <div class="albums-empty-icon" aria-hidden="true">&#128218;</div>
             <h3 class="albums-empty-title" data-i18n="album.emptyTitle">No albums yet</h3>

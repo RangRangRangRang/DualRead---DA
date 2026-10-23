@@ -58,7 +58,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function recalculatePagination() {
         if (!pageFrame || !pageTrack || translationModeOn) return;
 
-        var frameWidth = pageFrame.clientWidth;
+        var frameStyle = window.getComputedStyle(pageFrame);
+        var frameWidth = Math.floor(pageFrame.clientWidth - (parseFloat(frameStyle.paddingLeft) || 0) - (parseFloat(frameStyle.paddingRight) || 0));
+        if (frameWidth < 1) return;
         pageTrack.style.columnWidth = frameWidth + 'px';
         pageTrack.style.width = frameWidth + 'px';
         pageTrack.style.transform = 'translateX(0px)';

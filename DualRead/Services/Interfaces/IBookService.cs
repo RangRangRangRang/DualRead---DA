@@ -12,7 +12,8 @@ public interface IBookService
 
     Task<(Book Book, RecoveryKey RecoveryKey)> UploadBookAsync(Guid? recoveryKeyId, string originalFileName, long fileSizeBytes, Stream fileContent);
 
-    Task<Book?> RenameBookAsync(Guid bookId, string title, string? author);
+    Task<HashSet<Guid>> GetStartedBookIdsAsync(Guid recoveryKeyId);
+    Task<Book?> RenameBookAsync(Guid recoveryKeyId, Guid bookId, string title, string? author);
 
     Task<bool> DeleteBookAsync(Guid recoveryKeyId, Guid bookId);
 }

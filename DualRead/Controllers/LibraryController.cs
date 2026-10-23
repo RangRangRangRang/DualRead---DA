@@ -30,7 +30,8 @@ public class LibraryController : Controller
         }
 
         var books = await _bookService.GetLibraryAsync(recoveryKey.Id);
-        var viewModel = new LibraryViewModel { Books = books };
+        var startedIds = await _bookService.GetStartedBookIdsAsync(recoveryKey.Id);
+        var viewModel = new LibraryViewModel { Books = books, StartedBookIds = startedIds };
         ViewBag.RecoveryKeyCode = recoveryKey.Code;
         ViewBag.Language = (await _settingsService.GetAsync(recoveryKey.Id)).Language;
         return View(viewModel);
@@ -39,6 +40,7 @@ public class LibraryController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(MaxUploadBytes * 20)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadBytes * 20)]
     public async Task<IActionResult> Upload(List<IFormFile> epubFiles)
     {
         if (epubFiles is null || epubFiles.Count == 0 || epubFiles.All(f => f.Length == 0))
@@ -130,7 +132,13 @@ public class LibraryController : Controller
             return BadRequest(new { error = "Book title is required." });
         }
 
-        var book = await _bookService.RenameBookAsync(id, dto.Title, dto.Author);
+        var recoveryKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
+        if (recoveryKey is null)
+        {
+            return Unauthorized();
+        }
+
+        var book = await _bookService.RenameBookAsync(recoveryKey.Id, id, dto.Title, dto.Author);
         if (book is null)
         {
             return NotFound();

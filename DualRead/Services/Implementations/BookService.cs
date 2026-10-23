@@ -43,6 +43,15 @@ public class BookService : IBookService
             .ToListAsync();
     }
 
+    public async Task<HashSet<Guid>> GetStartedBookIdsAsync(Guid recoveryKeyId)
+    {
+        var ids = await _db.Books
+            .Where(b => b.RecoveryKeyId == recoveryKeyId && b.ReadingProgress != null)
+            .Select(b => b.Id)
+            .ToListAsync();
+        return ids.ToHashSet();
+    }
+
     public async Task<Book?> GetBookByIdAsync(Guid bookId)
     {
         return await _db.Books.AsNoTracking().FirstOrDefaultAsync(b => b.Id == bookId);
@@ -155,9 +164,9 @@ public class BookService : IBookService
         return (book, recoveryKey);
     }
 
-    public async Task<Book?> RenameBookAsync(Guid bookId, string title, string? author)
+    public async Task<Book?> RenameBookAsync(Guid recoveryKeyId, Guid bookId, string title, string? author)
     {
-        var book = await _db.Books.FirstOrDefaultAsync(b => b.Id == bookId);
+        var book = await _db.Books.FirstOrDefaultAsync(b => b.Id == bookId && b.RecoveryKeyId == recoveryKeyId);
         if (book is null)
         {
             return null;

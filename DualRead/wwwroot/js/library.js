@@ -78,6 +78,152 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    var sectionsEl = byId('library-sections');
+    var searchInput = byId('library-search-input');
+    var searchClear = byId('library-search-clear');
+    var sortSelect = byId('library-sort-select');
+    var noResultsEl = byId('library-no-results');
+    var VIEW_KEY = 'dualread.library.view';
+    var SORT_KEY = 'dualread.library.sort';
+
+    function readStored(key) {
+        try { return window.localStorage.getItem(key); } catch (err) { return null; }
+    }
+
+    function writeStored(key, value) {
+        try { window.localStorage.setItem(key, value); } catch (err) { }
+    }
+
+    function normalizeText(value) {
+        return (value || '').toString()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\u0111/g, 'd')
+            .replace(/\u0110/g, 'd')
+            .toLowerCase()
+            .trim();
+    }
+
+    function uploadedTime(card) {
+        var time = Date.parse(card.getAttribute('data-uploaded') || '');
+        return isNaN(time) ? 0 : time;
+    }
+
+    function compareTitles(a, b) {
+        return (a.getAttribute('data-title') || '').localeCompare(b.getAttribute('data-title') || '', undefined, { sensitivity: 'base' });
+    }
+
+    function comparatorFor(sort) {
+        return function (a, b) {
+            if (sort === 'oldest') return uploadedTime(a) - uploadedTime(b);
+            if (sort === 'title') return compareTitles(a, b);
+            if (sort === 'titleDesc') return compareTitles(b, a);
+            if (sort === 'author') {
+                var byAuthor = (a.getAttribute('data-author') || '').localeCompare(b.getAttribute('data-author') || '', undefined, { sensitivity: 'base' });
+                return byAuthor !== 0 ? byAuthor : compareTitles(a, b);
+            }
+            return uploadedTime(b) - uploadedTime(a);
+        };
+    }
+
+    function applySort() {
+        if (!sectionsEl) return;
+        var sort = sortSelect ? sortSelect.value : 'newest';
+        sectionsEl.querySelectorAll('.bk-grid').forEach(function (grid) {
+            var cards = Array.prototype.slice.call(grid.querySelectorAll('.bk-card'));
+            cards.sort(comparatorFor(sort));
+            cards.forEach(function (card) { grid.appendChild(card); });
+        });
+    }
+
+    function applyFilter() {
+        if (!sectionsEl) return;
+        var raw = searchInput ? searchInput.value : '';
+        var query = normalizeText(raw);
+        var totalVisible = 0;
+
+        sectionsEl.querySelectorAll('.library-format-section').forEach(function (section) {
+            var visible = 0;
+            section.querySelectorAll('.bk-card').forEach(function (card) {
+                var haystack = normalizeText((card.getAttribute('data-title') || '') + ' ' + (card.getAttribute('data-author') || ''));
+                var match = !query || haystack.indexOf(query) !== -1;
+                card.hidden = !match;
+                if (match) visible++;
+            });
+
+            var countEl = section.querySelector('.library-format-count');
+            if (countEl) countEl.textContent = '(' + visible + ')';
+            section.hidden = visible === 0;
+            totalVisible += visible;
+        });
+
+        if (noResultsEl) noResultsEl.hidden = totalVisible !== 0;
+        if (searchClear) searchClear.hidden = raw.length === 0;
+    }
+
+    function closeOpenCards(except) {
+        document.querySelectorAll('.bk-card.is-open').forEach(function (card) {
+            if (card !== except) card.classList.remove('is-open');
+        });
+    }
+
+    function setView(view) {
+        if (!sectionsEl) return;
+        sectionsEl.querySelectorAll('.bk-grid').forEach(function (grid) {
+            grid.classList.toggle('is-list', view === 'list');
+        });
+        document.querySelectorAll('.library-view-btn').forEach(function (btn) {
+            var active = btn.getAttribute('data-view') === view;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        writeStored(VIEW_KEY, view);
+        closeOpenCards();
+    }
+
+    if (sectionsEl) {
+        var storedSort = readStored(SORT_KEY);
+        if (storedSort && sortSelect && sortSelect.querySelector('option[value="' + storedSort + '"]')) {
+            sortSelect.value = storedSort;
+        }
+        setView(readStored(VIEW_KEY) === 'list' ? 'list' : 'grid');
+        applySort();
+
+        if (searchInput) searchInput.addEventListener('input', applyFilter);
+        if (searchClear) {
+            searchClear.addEventListener('click', function () {
+                searchInput.value = '';
+                applyFilter();
+                searchInput.focus();
+            });
+        }
+        if (sortSelect) {
+            sortSelect.addEventListener('change', function () {
+                writeStored(SORT_KEY, sortSelect.value);
+                applySort();
+            });
+        }
+        document.querySelectorAll('.library-view-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () { setView(btn.getAttribute('data-view')); });
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!window.matchMedia || !window.matchMedia('(hover: none)').matches) return;
+
+        var card = e.target.closest('.bk-card');
+        if (!card) {
+            closeOpenCards();
+            return;
+        }
+        if (e.target.closest('.bk-act')) return;
+        if (card.parentElement && card.parentElement.classList.contains('is-list')) return;
+
+        var wasOpen = card.classList.contains('is-open');
+        closeOpenCards(card);
+        card.classList.toggle('is-open', !wasOpen);
+    });
+
     document.querySelectorAll('.book-delete-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             if (!window.confirm(t('lib.deleteConfirm'))) {
@@ -209,49 +355,41 @@ document.addEventListener('DOMContentLoaded', function () {
     var albumsEmptyState = byId('albums-empty-state');
     var albumsCountBadge = byId('albums-count-badge');
 
-    function albumBookCardHtml(album, book) {
+    function albumBookHtml(album, book) {
         var cover = book.coverImagePath
-            ? '<img src="' + escapeHtml(book.coverImagePath) + '" alt="' + escapeHtml(book.title) + '" loading="lazy" />'
-            : '<div class="book-cover-placeholder"></div>';
+            ? '<img src="' + escapeHtml(book.coverImagePath) + '" alt="" loading="lazy" />'
+            : '<div class="bk-placeholder"></div>';
 
         return '' +
-            '<div class="album-book-card" data-book-id="' + book.id + '">' +
-            '<a class="album-book-cover-link" href="/Reader/' + book.id + '">' +
-            '<div class="album-book-cover">' + cover + '</div>' +
-            '<div class="album-book-title" title="' + escapeHtml(book.title) + '">' + escapeHtml(book.title) + '</div>' +
-            '<div class="album-book-author" title="' + escapeHtml(book.author || '') + '">' + (escapeHtml(book.author || '') || '&nbsp;') + '</div>' +
+            '<div class="alb-book" data-book-id="' + book.id + '">' +
+            '<a class="alb-book-link" href="/Reader/' + book.id + '" title="' + escapeHtml(book.title) + '">' +
+            cover +
+            '<span class="alb-book-name">' + escapeHtml(book.title) + '</span>' +
             '</a>' +
-            '<div class="album-book-actions">' +
-            '<button type="button" class="album-action-btn album-book-remove-btn" data-album-id="' + album.id + '" data-book-id="' + book.id + '" title="' + escapeHtml(t('album.removeBookTitle')) + '">' +
-            '<span class="btn-text">' + escapeHtml(t('album.removeBook')) + '</span>' +
-            '</button>' +
-            '</div>' +
+            '<button type="button" class="alb-book-remove album-book-remove-btn" data-album-id="' + album.id + '" data-book-id="' + book.id + '" aria-label="' + escapeHtml(t('album.removeBookTitle')) + '" title="' + escapeHtml(t('album.removeBookTitle')) + '">&times;</button>' +
             '</div>';
     }
 
-    function albumBannerHtml(album) {
-        var slides = (album.books && album.books.length > 0)
-            ? album.books.map(function (book) { return albumBookCardHtml(album, book); }).join('')
-            : '<div class="album-slide-empty">' + escapeHtml(t('album.slideEmpty')) + '</div>';
+    function albumShelfHtml(album) {
+        var books = (album.books && album.books.length > 0)
+            ? album.books.map(function (book) { return albumBookHtml(album, book); }).join('')
+            : '<div class="alb-empty">' + escapeHtml(t('album.slideEmpty')) + '</div>';
 
         return '' +
-            '<div class="album-banner-container" data-album-id="' + album.id + '">' +
-            '<div class="album-banner-header">' +
-            '<div class="album-banner-title-group">' +
-            '<h2 class="album-banner-title" title="' + escapeHtml(album.name) + '">' + escapeHtml(album.name) + '</h2>' +
-            '<span class="album-banner-count-badge">' + escapeHtml(t('album.books', { n: album.bookCount || 0 })) + '</span>' +
+            '<section class="alb-shelf" data-album-id="' + album.id + '">' +
+            '<header class="alb-head">' +
+            '<div class="alb-title-group">' +
+            '<h2 class="alb-name" title="' + escapeHtml(album.name) + '">' + escapeHtml(album.name) + '</h2>' +
+            '<span class="alb-count">' + escapeHtml(t('album.books', { n: album.bookCount || 0 })) + '</span>' +
             '</div>' +
-            '<div class="album-banner-controls">' +
+            '<div class="alb-ctrl">' +
             '<button type="button" class="lib-btn lib-btn-sm lib-btn-secondary album-rename-btn" data-album-id="' + album.id + '">' + escapeHtml(t('album.rename')) + '</button>' +
             '<button type="button" class="lib-btn lib-btn-sm lib-btn-danger album-delete-btn" data-album-id="' + album.id + '">' + escapeHtml(t('album.delete')) + '</button>' +
             '</div>' +
-            '</div>' +
-            '<div class="album-carousel-wrapper">' +
-            '<button type="button" class="album-carousel-arrow arrow-left" data-slide-dir="-1" aria-label="Previous">&lsaquo;</button>' +
-            '<div class="album-carousel-track">' + slides + '</div>' +
-            '<button type="button" class="album-carousel-arrow arrow-right" data-slide-dir="1" aria-label="Next">&rsaquo;</button>' +
-            '</div>' +
-            '</div>';
+            '</header>' +
+            '<div class="alb-row">' + books + '</div>' +
+            '<div class="alb-plank"></div>' +
+            '</section>';
     }
 
     function renderAlbums() {
@@ -265,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         albumsEmptyState.hidden = true;
-        albumStack.innerHTML = albumsData.map(albumBannerHtml).join('');
+        albumStack.innerHTML = albumsData.map(albumShelfHtml).join('');
     }
 
     function loadAlbums() {
@@ -346,14 +484,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (albumStack) {
         albumStack.addEventListener('click', function (e) {
-            var arrow = e.target.closest('.album-carousel-arrow');
-            if (arrow) {
-                var track = arrow.closest('.album-carousel-wrapper').querySelector('.album-carousel-track');
-                var direction = parseInt(arrow.getAttribute('data-slide-dir'), 10) || 1;
-                track.scrollBy({ left: direction * track.clientWidth * 0.8, behavior: 'smooth' });
-                return;
-            }
-
             var renameBtn = e.target.closest('.album-rename-btn');
             if (renameBtn) {
                 openAlbumForm(findAlbum(renameBtn.getAttribute('data-album-id')));
@@ -534,10 +664,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     return res.json();
                 })
                 .then(function (updated) {
-                    var card = document.querySelector('.book-card[data-book-id="' + bookId + '"]');
+                    var card = document.querySelector('.bk-card[data-book-id="' + bookId + '"]');
                     if (card) {
-                        var titleEl = card.querySelector('.book-title');
-                        var authorEl = card.querySelector('.book-author');
+                        var titleEl = card.querySelector('.bk-title');
+                        var authorEl = card.querySelector('.bk-author');
                         var renameBtn = card.querySelector('.book-rename-btn');
 
                         if (titleEl) {
@@ -547,6 +677,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (authorEl) {
                             authorEl.textContent = updated.author || '\u00A0';
                         }
+                        card.setAttribute('data-title', updated.title);
+                        card.setAttribute('data-author', updated.author || '');
                         if (renameBtn) {
                             renameBtn.setAttribute('data-book-title', updated.title);
                             renameBtn.setAttribute('data-book-author', updated.author || '');
