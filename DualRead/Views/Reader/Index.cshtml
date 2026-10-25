@@ -59,7 +59,7 @@
                     <li class="sidebar-list-item bookmark-list-item" data-bookmark-id="@bookmark.Id" data-chapter-id="@bookmark.ChapterId" data-page="@bookmark.Page">
                         @if (string.IsNullOrWhiteSpace(bookmark.PreviewText))
                         {
-                            <span class="bookmark-preview-text" data-i18n="reader.pageLabel" data-i18n-params='{"n":@(bookmark.Page + 1)}'>Page @(bookmark.Page + 1)</span>
+                            <span class="bookmark-preview-text" data-i18n="reader.positionLabel" data-i18n-params='{"n":@(bookmark.Page / 10)}'>Position @(bookmark.Page / 10)%</span>
                         }
                         else
                         {
@@ -117,11 +117,9 @@
         else
         {
             <div class="page-frame" id="page-frame">
-                <button type="button" class="page-arrow page-arrow-left" id="page-arrow-left" aria-label="Previous page">&#8249;</button>
                 <div class="page-track reader-content-box" id="page-track">@Html.Raw(Model.LandingChapterHtml)</div>
-                <button type="button" class="page-arrow page-arrow-right" id="page-arrow-right" aria-label="Next page">&#8250;</button>
             </div>
-            <div class="page-indicator" id="page-indicator">1 / 1</div>
+            <div class="page-indicator" id="page-indicator">0%</div>
 
             @if (Model.CanTranslate)
             {

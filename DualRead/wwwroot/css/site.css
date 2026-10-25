@@ -16,19 +16,12 @@ body.theme-light {
     --eb-text-dim: #6c757d;
 }
 
-body.theme-sepia {
-    --eb-bg: #f4ecd8;
-    --eb-surface: #ece0c3;
-    --eb-border: #ddcda3;
-    --eb-text: #5b4636;
-    --eb-text-dim: #8a7458;
-}
-
 * {
     box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     margin: 0;
 }
@@ -40,19 +33,28 @@ body {
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* --- Scrollbar --- */
+/* ==========================================================================
+   SCROLLBAR
+   ========================================================================== */
+
 ::-webkit-scrollbar {
     display: none;
     width: 0 !important;
     height: 0 !important;
 }
 
-html, body, .reader-viewport, .sidebar, .sidebar-panel {
+html,
+body,
+.sidebar,
+.sidebar-panel {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
 
-/* --- Landing & Gateway --- */
+/* ==========================================================================
+   GATEWAY PAGE
+   ========================================================================== */
+
 .landing,
 .landing-gateway {
     min-height: 100vh;
@@ -64,8 +66,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     width: 100%;
 }
 
-.gateway-card,
-.landing-card {
+.gateway-card {
     width: 100%;
     max-width: 900px;
     background: var(--eb-surface);
@@ -96,8 +97,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     margin-bottom: 35px;
 }
 
-.gateway-section,
-.landing-form {
+.gateway-section {
     width: 100%;
     max-width: 100%;
     display: flex;
@@ -106,8 +106,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     margin: 0 auto;
 }
 
-.upload-dropzone-large,
-.upload-dropzone {
+.upload-dropzone-large {
     width: 100%;
     min-height: 160px;
     border: 2px dashed var(--eb-border);
@@ -122,8 +121,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     transition: border-color 0.25s ease, background-color 0.25s ease;
 }
 
-    .upload-dropzone-large:hover,
-    .upload-dropzone:hover {
+    .upload-dropzone-large:hover {
         border-color: var(--eb-teal);
         background: rgba(0, 201, 167, 0.05);
     }
@@ -138,8 +136,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     color: var(--eb-text-dim);
 }
 
-.gateway-divider,
-.landing-divider {
+.gateway-divider {
     width: 100%;
     display: flex;
     align-items: center;
@@ -148,8 +145,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     position: relative;
 }
 
-    .gateway-divider::before,
-    .landing-divider::before {
+    .gateway-divider::before {
         content: '';
         position: absolute;
         width: 100%;
@@ -160,8 +156,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         z-index: 1;
     }
 
-    .gateway-divider span,
-    .landing-divider span {
+    .gateway-divider span {
         position: relative;
         z-index: 2;
         background: var(--eb-surface);
@@ -171,31 +166,6 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         font-size: 0.95rem;
         letter-spacing: 0.1em;
     }
-
-.key-info-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--eb-border);
-    padding: 12px 24px;
-    border-radius: 20px;
-    margin-bottom: 24px;
-}
-
-.key-label {
-    font-size: 1rem;
-    color: var(--eb-text-dim);
-}
-
-.key-value {
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--eb-teal);
-    letter-spacing: 0.08em;
-}
 
 .btn-copy {
     background: none;
@@ -211,8 +181,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     width: 100%;
 }
 
-.gateway-input,
-.landing-input {
+.gateway-input {
     flex: 1;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--eb-border);
@@ -224,14 +193,12 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     transition: border-color 0.2s ease;
 }
 
-    .gateway-input:focus,
-    .landing-input:focus {
+    .gateway-input:focus {
         border-color: var(--eb-teal);
         background: rgba(0, 0, 0, 0.4);
     }
 
-.btn-gateway,
-.landing-upload-btn {
+.btn-gateway {
     padding: 15px 32px;
     font-size: 1.05rem;
     font-weight: 600;
@@ -279,66 +246,15 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     transform: none !important;
 }
 
-/* --- Library Page --- */
+/* ==========================================================================
+   LIBRARY: PAGE & TOOLBAR
+   ========================================================================== */
+
 .library-page {
     max-width: 1500px;
     margin: 0 auto;
     padding: 40px 20px;
 }
-
-.library-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-}
-
-    .library-header h1 {
-        font-size: 1.8rem;
-        margin: 0;
-    }
-
-.dict-tip-banner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(0, 201, 167, 0.07);
-    border: 1px solid rgba(0, 201, 167, 0.25);
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin-bottom: 20px;
-    font-size: 0.88rem;
-    color: var(--eb-text-dim);
-}
-
-.dict-tip-icon {
-    flex-shrink: 0;
-    font-size: 1.1rem;
-}
-
-.dict-tip-text {
-    flex: 1;
-}
-
-    .dict-tip-text a {
-        color: var(--eb-teal);
-        text-decoration: underline;
-    }
-
-.dict-tip-dismiss {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    color: var(--eb-text-dim);
-    font-size: 1.3rem;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0 4px;
-}
-
-    .dict-tip-dismiss:hover {
-        color: var(--eb-text);
-    }
 
 .library-toolbar {
     display: flex;
@@ -459,7 +375,10 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         color: #0d1f1c;
     }
 
-/* --- Library Format Sections & Dividers --- */
+/* ==========================================================================
+   LIBRARY: FORMAT SECTIONS
+   ========================================================================== */
+
 .library-sections-container {
     display: flex;
     flex-direction: column;
@@ -535,169 +454,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     border: 1px solid rgba(54, 162, 235, 0.3);
 }
 
-.book-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 280px));
-    gap: 50px;
-    justify-content: center;
-}
-
-.book-author {
-    font-size: 0.75rem;
-    color: var(--eb-text-dim);
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.book-grid-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-    .book-grid-list .book-card {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        text-align: left;
-        gap: 16px;
-        padding: 10px 16px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.03);
-        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-    }
-
-        .book-grid-list .book-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(56, 189, 248, 0.3);
-            transform: translateY(-1px);
-        }
-
-    .book-grid-list .book-cover-link {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex: 1;
-        min-width: 0;
-        text-decoration: none;
-    }
-
-    .book-grid-list .book-cover {
-        width: 48px;
-        height: 68px;
-        flex-shrink: 0;
-        margin-bottom: 0;
-        border-radius: 6px;
-        overflow: hidden;
-    }
-
-        .book-grid-list .book-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-    .book-grid-list .book-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #f1f5f9;
-        margin-bottom: 4px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .book-grid-list .book-author {
-        font-size: 0.82rem;
-        color: #94a3b8;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .book-grid-list .book-card-actions {
-        width: auto !important;
-        flex: none !important;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        border-top: none !important;
-        flex-shrink: 0;
-    }
-
-    .book-grid-list .book-card-action-form {
-        width: auto !important;
-        flex: none !important;
-        display: inline-flex;
-    }
-
-    .book-grid-list .book-card-action-btn {
-        width: auto !important;
-        flex: none !important;
-        padding: 6px 14px;
-        font-size: 12px;
-        font-weight: 500;
-        min-height: 32px;
-        border-radius: 6px;
-    }
-
-.book-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    text-decoration: none;
-    color: inherit;
-    min-width: 0;
-}
-
-.book-cover-link {
-    display: block;
-    width: 100%;
-    text-decoration: none;
-    color: inherit;
-}
-
-.book-cover-placeholder {
-    width: 100%;
-    height: 100%;
-    background: #000;
-}
-
-.book-cover {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 2 / 3;
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--eb-surface);
-    border: 1px solid var(--eb-border);
-    margin-bottom: 8px;
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.book-type-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    padding: 2px 8px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    backdrop-filter: blur(2px);
-}
-
-.upload-dropzone-large.dragover,
-.upload-dropzone.dragover {
+.upload-dropzone-large.dragover {
     border-color: #00c9a7;
     background: rgba(0, 201, 167, 0.08);
 }
@@ -788,40 +545,10 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         transform: scale(1.05);
     }
 
-.book-card:hover .book-cover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-}
+/* ==========================================================================
+   LIBRARY: BUTTONS
+   ========================================================================== */
 
-.book-cover img {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.book-title {
-    font-size: 0.85rem;
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-bottom: 4px;
-}
-
-/* =========================================================================
-   LIBRARY HEADER ACTIONS, BUTTONS, BOOK CARD ACTIONS
-   (trimmed from the full site.css - Albums/Vocabulary/i18n-only rules cut)
-   ========================================================================= */
-.library-header-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-/* Base button styles in library header */
 .lib-btn {
     display: inline-flex;
     align-items: center;
@@ -848,7 +575,8 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     border-radius: 6px;
 }
 
-/* Primary Upload Button */
+/* --- Primary button (Upload) --- */
+
 .lib-btn-primary {
     background: #f8fafc;
     color: #0f172a !important;
@@ -864,23 +592,8 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     }
 
-/* Accent Button (Cyan/Teal Gradient for New Album) */
-.lib-btn-accent {
-    background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);
-    color: #ffffff !important;
-    font-weight: 600;
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 2px 10px rgba(6, 182, 212, 0.25);
-}
+/* --- Danger button (Delete) --- */
 
-    .lib-btn-accent:hover {
-        background: linear-gradient(135deg, #0369a1 0%, #0891b2 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
-        color: #ffffff !important;
-    }
-
-/* Danger Button (Delete) */
 .lib-btn-danger {
     background: rgba(239, 68, 68, 0.12);
     color: #fca5a5;
@@ -893,7 +606,8 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         border-color: #ef4444;
     }
 
-/* Secondary Button */
+/* --- Secondary button --- */
+
 .lib-btn-secondary {
     background: rgba(255, 255, 255, 0.06);
     color: #f1f5f9;
@@ -906,23 +620,7 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         color: #fff;
     }
 
-.lib-badge-count {
-    background: #0284c7;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 10px;
-    min-width: 18px;
-    text-align: center;
-}
-
-/* Key Badge Button */
-.recovery-badge-content {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
+/* --- Recovery key badge --- */
 
 .recovery-badge-label {
     display: none;
@@ -943,7 +641,8 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         color: #38bdf8;
     }
 
-/* Segmented Control for Language Switch (EN | VI) */
+/* --- Language switch (EN | VI) --- */
+
 .lang-segmented-control {
     display: inline-flex;
     align-items: center;
@@ -982,84 +681,9 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     }
 
 /* ==========================================================================
-   BOOK CARDS ACTIONS (ALL BOOKS VIEW)
+   MODALS & FORMS
    ========================================================================== */
-.book-card-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px;
-    margin-top: 8px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    width: 100%;
-}
 
-.book-card-action-form {
-    flex: 1;
-    display: flex;
-    margin: 0;
-    min-width: 0;
-}
-
-.book-card-action-btn {
-    flex: 1;
-    min-width: 0;
-    width: 100%;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #cbd5e1;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 5px 3px;
-    border-radius: 5px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    transition: all 0.15s ease;
-    line-height: 1.2;
-    min-height: 28px;
-    white-space: nowrap;
-    text-decoration: none;
-}
-
-    .book-card-action-btn .action-label {
-        display: inline-block;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 11px;
-    }
-
-    .book-card-action-btn:hover {
-        background: rgba(255, 255, 255, 0.14);
-        color: #ffffff;
-        border-color: rgba(255, 255, 255, 0.22);
-    }
-
-.book-rename-btn:hover {
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.12);
-    border-color: rgba(56, 189, 248, 0.35);
-}
-
-.book-add-to-album-btn:hover {
-    color: #34d399;
-    background: rgba(52, 211, 153, 0.12);
-    border-color: rgba(52, 211, 153, 0.35);
-}
-
-.book-delete-btn:hover {
-    color: #f87171;
-    background: rgba(239, 68, 68, 0.18);
-    border-color: rgba(239, 68, 68, 0.35);
-}
-
-/* =========================================================================
-   MODALS & FORMS (used by the Rename Book modal)
-   ========================================================================= */
 .lib-modal-backdrop {
     position: fixed;
     top: 0;
@@ -1140,14 +764,6 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     overflow-y: auto;
 }
 
-.lib-modal-subtitle {
-    font-size: 13.5px;
-    color: #38bdf8;
-    font-weight: 500;
-    margin-bottom: 14px;
-    word-break: break-word;
-}
-
 .lib-modal-footer {
     display: flex;
     align-items: center;
@@ -1156,13 +772,6 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     padding: 14px 22px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(0, 0, 0, 0.15);
-}
-
-.lib-modal-status-text {
-    margin-right: auto;
-    font-size: 12.5px;
-    color: #94a3b8;
-    font-weight: 500;
 }
 
 .lib-form-group {
@@ -1197,16 +806,9 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
     }
 
-
-/* =========================================================================
-   LIBRARY TITLE / HEADER TEXT
-   ========================================================================= */
-.library-title-nav {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-}
+/* ==========================================================================
+   LIBRARY: TITLE
+   ========================================================================== */
 
 .library-main-title {
     font-size: 1.85rem;
@@ -1232,12 +834,10 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     font-weight: 700;
 }
 
-/* =========================================================================
-   MILESTONE-SLICE-ONLY RULES (not in the original site.css - added here
-   because this slice's Library/Index.cshtml has no Albums tab / search
-   toolbar to lean on, so the "no books yet" state needs its own box, and
-   the "Doc" (read) action button needs a hover color of its own)
-   ========================================================================= */
+/* ==========================================================================
+   LIBRARY: EMPTY STATE
+   ========================================================================== */
+
 .library-empty-box {
     border: 1px dashed rgba(255, 255, 255, 0.14);
     border-radius: 12px;
@@ -1246,15 +846,10 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     margin-top: 24px;
 }
 
-.book-read-btn:hover {
-    color: #00c9a7;
-    background: rgba(0, 201, 167, 0.12);
-    border-color: rgba(0, 201, 167, 0.35);
-}
+/* ==========================================================================
+   READER: LAYOUT & SIDEBARS
+   ========================================================================== */
 
-/* =========================================================================
-   READER PAGE (3-column skeleton: sidebar / center / settings)
-   ========================================================================= */
 .reader-app {
     display: flex !important;
     width: 100vw;
@@ -1349,45 +944,6 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         cursor: not-allowed;
     }
 
-.chapter-list-wrap {
-    display: flex;
-    align-items: stretch;
-    gap: 6px;
-}
-
-    .chapter-list-wrap #panel-chapters {
-        flex: 1;
-        min-width: 0;
-    }
-
-.chapter-scrollbar {
-    width: 4px;
-    background: var(--eb-border);
-    border-radius: 4px;
-    position: relative;
-    flex-shrink: 0;
-    cursor: pointer;
-    display: none;
-}
-
-    .chapter-scrollbar.visible {
-        display: block;
-    }
-
-.chapter-scrollbar-thumb {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    background: var(--eb-teal);
-    border-radius: 4px;
-    cursor: grab;
-}
-
-    .chapter-scrollbar-thumb:active {
-        cursor: grabbing;
-    }
-
 .sidebar-list-item {
     padding: 8px 10px;
     font-size: 0.88rem;
@@ -1442,16 +998,6 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     transition: opacity 0.4s ease;
 }
 
-.reader-viewport {
-    width: 100% !important;
-    max-width: 2000px !important;
-    height: calc(100vh - 60px) !important;
-    margin: 0 auto !important;
-    position: relative;
-    overflow-y: auto !important;
-    padding: 10px 30px 40px;
-}
-
 .reader-content-box {
     line-height: 1.75;
     font-size: 18px;
@@ -1464,7 +1010,9 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
         word-break: break-word;
     }
 
-    .reader-content-box h1, .reader-content-box h2, .reader-content-box h3 {
+    .reader-content-box h1,
+    .reader-content-box h2,
+    .reader-content-box h3 {
         text-align: center;
         margin-bottom: 1em;
     }
@@ -1479,29 +1027,6 @@ html, body, .reader-viewport, .sidebar, .sidebar-panel {
     margin: 24px 0 16px;
     padding-top: 14px;
     border-top: 1px dashed var(--eb-border);
-}
-
-.pdf-image-container {
-    text-align: center;
-    margin: 12px auto 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    max-width: 100%;
-}
-
-.pdf-page-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 6px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-    background-color: #ffffff;
-    display: block;
-    transition: filter 0.2s ease;
-}
-
-body.theme-sepia .pdf-page-image {
-    filter: sepia(25%) brightness(96%) contrast(98%);
 }
 
 .reader-app[data-book-type="pdf"] .text-only-setting,
@@ -1530,7 +1055,10 @@ body.theme-sepia .pdf-page-image {
     font-size: 0.84rem;
 }
 
-/* --- Top Bar & Translation --- */
+/* ==========================================================================
+   READER: TOP BAR
+   ========================================================================== */
+
 .reader-topbar {
     position: absolute;
     top: 14px;
@@ -1625,37 +1153,6 @@ body.theme-sepia .pdf-page-image {
         text-decoration: none;
     }
 
-.reader-split {
-    display: flex;
-    align-items: flex-start;
-    gap: 32px;
-    width: 100%;
-}
-
-    .reader-split .reader-content-box {
-        flex: 1;
-        min-width: 0;
-    }
-
-.translation-column {
-    flex: 1;
-    min-width: 0;
-    border-left: 1px solid var(--eb-border);
-    padding-left: 32px;
-}
-
-    .translation-column.full-width {
-        flex: 1 1 100%;
-        border-left: none;
-        padding-left: 0;
-    }
-
-.translation-column-placeholder {
-    color: var(--eb-text-dim);
-    font-size: 0.9rem;
-    padding: 20px 0;
-}
-
 .translation-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1703,37 +1200,10 @@ body.theme-sepia .pdf-page-image {
         box-shadow: 0 0 0 1px var(--eb-teal);
     }
 
-/* --- Focus Mode --- */
-.reader-app.focus-mode {
-    cursor: none !important;
-}
+/* ==========================================================================
+   READER: MOBILE CONTROLS
+   ========================================================================== */
 
-    .reader-app.focus-mode .sidebar-left {
-        opacity: 0;
-        pointer-events: none;
-        transform: translateX(-20px);
-    }
-
-    .reader-app.focus-mode .sidebar-right {
-        opacity: 0;
-        pointer-events: none;
-        transform: translateX(20px);
-    }
-
-    .reader-app.focus-mode .reader-book-title,
-    .reader-app.focus-mode .translate-toggle-btn,
-    .reader-app.focus-mode .tts-toggle-btn,
-    .reader-app.focus-mode .export-translation-btn {
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .reader-app.focus-mode .icon-toggle-btn {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-/* --- Responsive & Mobile Base Controls --- */
 .icon-toggle-btn {
     display: none;
     pointer-events: auto;
@@ -1785,7 +1255,7 @@ body.theme-sepia .pdf-page-image {
 }
 
 .sidebar-close-btn {
-    display: none; /* hidden on desktop */
+    display: none;
     background: transparent;
     border: none;
     color: var(--eb-text-dim);
@@ -1802,62 +1272,31 @@ body.theme-sepia .pdf-page-image {
         background: rgba(255, 255, 255, 0.1);
     }
 
-/* =========================================================================
-   MILESTONE-SLICE-ONLY RULES (not in the original site.css - this project's
-   pagination is real CSS-column paging with click-to-turn arrows and a page
-   counter, per the Claude.md spec for Reading mode; the original project's
-   reader scrolls instead and tracks a pixel offset, so these rules have no
-   equivalent upstream to reuse)
-   ========================================================================= */
+/* ==========================================================================
+   READER: SCROLL AREA
+   ========================================================================== */
+
 .page-frame {
     position: relative;
     width: 100%;
-    height: calc(100vh - 60px);
-    overflow: hidden;
-    padding: 0 44px;
-    box-sizing: border-box;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
 }
 
 .page-track {
-    height: 100%;
-    column-gap: 64px;
-    will-change: transform;
-    transition: transform 0.25s ease;
-}
-
-.page-arrow {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: var(--eb-text-dim);
-    font-size: 28px;
-    cursor: pointer;
-    z-index: 5;
-    transition: color 0.15s, background 0.15s;
-}
-
-    .page-arrow:hover {
-        color: var(--eb-teal);
-        background: rgba(0, 201, 167, 0.06);
-    }
-
-.page-arrow-left {
-    left: 0;
-}
-
-.page-arrow-right {
-    right: 0;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 12px 24px 72px;
 }
 
 .page-indicator {
+    flex-shrink: 0;
     text-align: center;
-    padding: 10px 0 16px;
+    padding: 6px 0 10px;
     color: var(--eb-text-dim);
     font-size: 13px;
     letter-spacing: 0.05em;
@@ -1873,12 +1312,10 @@ body.theme-sepia .pdf-page-image {
     padding: 40px;
 }
 
-/* =========================================================================
-   MILESTONE-SLICE-ONLY RULES (Tuan 4): bookmark sidebar rows, topbar action
-   group, empty-state hint, and PDF page markers. The original stylesheet
-   has no equivalents for these because its bookmark list is rendered by
-   different markup.
-   ========================================================================= */
+/* ==========================================================================
+   READER: BOOKMARKS, EMPTY STATES & PDF MARKERS
+   ========================================================================== */
+
 .reader-topbar-actions {
     display: flex;
     align-items: center;
@@ -1975,8 +1412,9 @@ body.theme-sepia .pdf-page-image {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 /* ==========================================================================
-   QUICK TRANSLATOR BUBBLE & POPOVER
+   QUICK TRANSLATE: BUBBLE & POPOVER
    ========================================================================== */
 
 .quick-trans-bubble {
@@ -2060,7 +1498,6 @@ body.theme-sepia .pdf-page-image {
     gap: 6px;
 }
 
-.quick-trans-btn,
 .quick-trans-close-btn {
     background: transparent;
     border: none;
@@ -2074,7 +1511,6 @@ body.theme-sepia .pdf-page-image {
     transition: color 0.15s, background 0.15s;
 }
 
-    .quick-trans-btn:hover,
     .quick-trans-close-btn:hover {
         color: #f8fafc;
         background: rgba(255, 255, 255, 0.1);
@@ -2085,10 +1521,6 @@ body.theme-sepia .pdf-page-image {
     line-height: 1;
     width: 24px;
     height: 24px;
-}
-
-.quick-trans-copy-btn.copied {
-    color: #10b981;
 }
 
 .quick-trans-body {
@@ -2169,7 +1601,8 @@ body.theme-sepia .pdf-page-image {
         border-color: rgba(234, 179, 8, 0.4);
     }
 
-/* Skeleton Loading */
+/* --- Skeleton loading --- */
+
 .quick-trans-skeleton {
     display: flex;
     flex-direction: column;
@@ -2204,16 +1637,10 @@ body.theme-sepia .pdf-page-image {
     }
 }
 
-/* =========================================================================
-   RESPONSIVE & MOBILE ENHANCEMENTS (Tuan 5)
-   Adapted from the original's "TABLETS & SCREENS UNDER 900PX" block, but
-   rewritten against this slice's own sidebar toggle classes (.open /
-   .sidebar-backdrop.show, set by reader.js) instead of the original's
-   .mobile-open / .mobile-sidebar-active, and against .page-frame/.page-track
-   (this slice's real pagination) instead of .reader-viewport (the original's
-   scroll-based reader). Export/Translate-toggle/Translation-mode rules are
-   dropped since those features are not part of this slice.
-   ========================================================================= */
+/* ==========================================================================
+   RESPONSIVE: TABLETS & PHONES
+   ========================================================================== */
+
 :root {
     --sat: env(safe-area-inset-top, 0px);
     --sar: env(safe-area-inset-right, 0px);
@@ -2268,20 +1695,13 @@ body.theme-sepia .pdf-page-image {
         height: 100dvh;
     }
 
-    .page-frame {
-        height: calc(100dvh - 54px);
-        padding: 0 26px;
-    }
-
-    .page-arrow {
-        width: 26px;
-        font-size: 22px;
+    .page-track {
+        padding: 12px 16px 64px;
     }
 
     .reader-content-box {
         font-size: 17.5px;
         line-height: 1.7;
-        padding: 0;
     }
 
     .sidebar {
@@ -2332,36 +1752,12 @@ body.theme-sepia .pdf-page-image {
     .library-page {
         padding: 24px 16px calc(30px + var(--sab));
     }
-
-    .library-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 14px;
-        padding-bottom: 14px;
-        margin-bottom: 20px;
-    }
-
-    .library-title-nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        width: 100%;
-        flex-wrap: wrap;
-    }
-
-    .library-header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        width: 100%;
-    }
 }
 
-/* =========================================================================
-   QUICK TRANSLATE POPOVER ON NARROW SCREENS (Tuan 5)
-   ========================================================================= */
+/* ==========================================================================
+   RESPONSIVE: QUICK TRANSLATE POPOVER
+   ========================================================================== */
+
 @media (max-width: 640px) {
     .quick-trans-bubble {
         width: 40px;
@@ -2406,9 +1802,10 @@ body.theme-sepia .pdf-page-image {
     }
 }
 
-/* =========================================================================
-   TRANSLATION MODE (Tuan 6): toggle button, export link, paired grid
-   ========================================================================= */
+/* ==========================================================================
+   TRANSLATION MODE: BUTTONS
+   ========================================================================== */
+
 .translate-toggle-btn {
     pointer-events: auto;
     display: inline-flex;
@@ -2504,12 +1901,10 @@ body.theme-sepia .pdf-page-image {
         box-shadow: 0 0 0 1px var(--eb-teal);
     }
 
+/* ==========================================================================
+   TRANSLATION MODE: PAIRED VIEW
+   ========================================================================== */
 
-/* =========================================================================
-   MILESTONE-SLICE-ONLY RULES (Tuan 6): the scrollable translation view that
-   replaces the paginated frame while Translate is on, heading rows spanning
-   both columns, status line and narrow-screen layout.
-   ========================================================================= */
 .translation-view {
     width: 100%;
     height: calc(100vh - 60px);
@@ -2588,12 +1983,9 @@ body.theme-sepia .pdf-page-image {
     }
 }
 
-
-/* =========================================================================
-   ALBUMS, LIBRARY TABS, CHECKBOX LIST AND TTS PLAYER (Tuan 7)
-   Reused from the original stylesheet; @media rules and focus-mode/PDF-only
-   rules left out because those features are not in this slice.
-   ========================================================================= */
+/* ==========================================================================
+   LIBRARY TABS, ALBUMS & TTS PLAYER
+   ========================================================================== */
 
 .library-nav-tabs {
     display: inline-flex;
@@ -2632,6 +2024,8 @@ body.theme-sepia .pdf-page-image {
         box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
     }
 
+/* --- Albums --- */
+
 .albums-toolbar {
     display: flex;
     align-items: center;
@@ -2641,269 +2035,17 @@ body.theme-sepia .pdf-page-image {
     flex-wrap: wrap;
 }
 
-.albums-search-box {
-    flex: 1;
-    max-width: 480px;
-}
-
 .albums-banner-stack {
     display: flex;
     flex-direction: column;
     gap: 28px;
 }
 
-.album-banner-container {
-    background: linear-gradient(180deg, rgba(26, 31, 44, 0.75) 0%, rgba(18, 21, 30, 0.85) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
-    padding: 20px 24px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(12px);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-    .album-banner-container:hover {
-        border-color: rgba(56, 189, 248, 0.22);
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
-    }
-
-.album-banner-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-
-.album-banner-title-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.album-banner-title {
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 1.45rem;
-    font-weight: 700;
-    color: #f8fafc;
-    margin: 0;
-    letter-spacing: -0.2px;
-}
-
-.album-banner-count-badge {
-    background: rgba(56, 189, 248, 0.12);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    font-size: 11.5px;
-    font-weight: 600;
-    padding: 3px 9px;
-    border-radius: 12px;
-}
-
-.album-banner-controls {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.album-carousel-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.album-carousel-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #f1f5f9;
-    font-size: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 5;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    line-height: 1;
-}
-
-    .album-carousel-arrow:hover {
-        background: #0284c7;
-        border-color: #38bdf8;
-        color: #ffffff;
-        transform: translateY(-50%) scale(1.1);
-    }
-
-    .album-carousel-arrow.arrow-left {
-        left: -12px;
-    }
-
-    .album-carousel-arrow.arrow-right {
-        right: -12px;
-    }
-
-.album-carousel-track {
-    display: flex;
-    align-items: stretch;
-    gap: 16px;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    padding: 6px 4px 14px 4px;
-    width: 100%;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-    .album-carousel-track::-webkit-scrollbar {
-        display: none;
-    }
-
-.album-book-card {
-    flex: 0 0 140px;
-    width: 140px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    align-self: stretch;
-    transition: transform 0.18s ease;
-}
-
-    .album-book-card:hover {
-        transform: translateY(-3px);
-    }
-
-.album-book-cover-link {
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-}
-
-.album-book-cover {
-    width: 100%;
-    aspect-ratio: 2/3;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #1e2430;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 8px;
-    position: relative;
-}
-
-    .album-book-cover img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-        transition: transform 0.25s ease;
-    }
-
-.album-book-card:hover .album-book-cover img {
-    transform: scale(1.04);
-}
-
-.album-book-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #f1f5f9;
-    line-height: 1.35;
-    margin-bottom: 2px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-height: 35px;
-}
-
-.album-book-author {
-    font-size: 11.5px;
-    color: #94a3b8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-height: 16px;
-    margin-bottom: 6px;
-}
-
-.album-book-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: auto;
-    width: 100%;
-}
-
-.album-action-btn {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #cbd5e1;
-    font-size: 10.5px;
-    font-weight: 500;
-    padding: 3px 4px;
-    border-radius: 4px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-}
-
-    .album-action-btn:hover {
-        background: rgba(255, 255, 255, 0.12);
-        color: #f8fafc;
-    }
-
 .album-book-remove-btn:hover {
     background: rgba(239, 68, 68, 0.15);
     color: #fca5a5;
     border-color: rgba(239, 68, 68, 0.3);
 }
-
-.album-slide-empty {
-    width: 100%;
-    padding: 24px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.album-empty-add-btn {
-    background: rgba(56, 189, 248, 0.06);
-    border: 1.5px dashed rgba(56, 189, 248, 0.3);
-    color: #38bdf8;
-    font-size: 13.5px;
-    font-weight: 600;
-    padding: 14px 28px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.18s ease;
-}
-
-    .album-empty-add-btn:hover {
-        background: rgba(56, 189, 248, 0.14);
-        border-color: #38bdf8;
-        transform: translateY(-1px);
-    }
 
 .albums-empty-state {
     text-align: center;
@@ -2934,6 +2076,8 @@ body.theme-sepia .pdf-page-image {
     line-height: 1.55;
     margin-bottom: 22px;
 }
+
+/* --- Album picker checklist --- */
 
 .lib-checkbox-list {
     display: flex;
@@ -3012,93 +2156,7 @@ body.theme-sepia .pdf-page-image {
     border-radius: 10px;
 }
 
-.quick-create-album-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.album-picker-books-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 14px;
-    max-height: 420px;
-    overflow-y: auto;
-    padding: 4px;
-}
-
-.album-picker-book-card {
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    position: relative;
-    user-select: none;
-}
-
-    .album-picker-book-card input[type="checkbox"] {
-        display: none;
-    }
-
-.album-picker-cover-box {
-    width: 100%;
-    aspect-ratio: 2/3;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #1e2430;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    position: relative;
-    transition: all 0.18s ease;
-}
-
-    .album-picker-cover-box img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-
-.album-picker-check-badge {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(15, 23, 42, 0.7);
-    border: 1.5px solid rgba(255, 255, 255, 0.4);
-    color: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
-    transition: all 0.15s ease;
-}
-
-.album-picker-book-card input[type="checkbox"]:checked ~ .album-picker-cover-box {
-    border-color: #38bdf8;
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
-}
-
-    .album-picker-book-card input[type="checkbox"]:checked ~ .album-picker-cover-box .album-picker-check-badge {
-        background: #0284c7;
-        border-color: #38bdf8;
-        color: #ffffff;
-    }
-
-.album-picker-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: #cbd5e1;
-    margin-top: 6px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.3;
-}
+/* --- TTS player --- */
 
 .tts-highlight-active {
     background-color: rgba(56, 189, 248, 0.15) !important;
@@ -3106,11 +2164,6 @@ body.theme-sepia .pdf-page-image {
     border-radius: 4px;
     padding-left: 8px !important;
     transition: background-color 0.25s ease, border-color 0.25s ease, padding 0.25s ease;
-}
-
-body.theme-sepia .tts-highlight-active {
-    background-color: rgba(180, 83, 9, 0.16) !important;
-    border-left: 3.5px solid #b45309 !important;
 }
 
 body.theme-light .tts-highlight-active {
@@ -3156,13 +2209,6 @@ body.theme-light .tts-player-inner {
     color: #0f172a;
 }
 
-body.theme-sepia .tts-player-inner {
-    background: rgba(246, 239, 224, 0.95);
-    border: 1px solid rgba(120, 90, 60, 0.2);
-    box-shadow: 0 12px 32px rgba(80, 50, 20, 0.18);
-    color: #3d3224;
-}
-
 .tts-btn {
     background: transparent;
     border: none;
@@ -3197,15 +2243,6 @@ body.theme-light .tts-btn-icon {
         background: rgba(0, 0, 0, 0.06);
     }
 
-body.theme-sepia .tts-btn-icon {
-    color: #785a3c;
-}
-
-    body.theme-sepia .tts-btn-icon:hover {
-        color: #2e2215;
-        background: rgba(120, 90, 60, 0.12);
-    }
-
 .tts-btn-primary {
     width: 38px;
     height: 38px;
@@ -3219,16 +2256,6 @@ body.theme-sepia .tts-btn-icon {
         background: #7dd3fc;
         transform: scale(1.08);
         box-shadow: 0 0 18px rgba(56, 189, 248, 0.65);
-    }
-
-body.theme-sepia .tts-btn-primary {
-    background: #b45309;
-    color: #fff;
-    box-shadow: 0 0 14px rgba(180, 83, 9, 0.4);
-}
-
-    body.theme-sepia .tts-btn-primary:hover {
-        background: #d97706;
     }
 
 body.theme-light .tts-btn-primary {
@@ -3250,10 +2277,6 @@ body.theme-light .tts-btn-primary {
 
 body.theme-light .tts-divider {
     background: rgba(0, 0, 0, 0.1);
-}
-
-body.theme-sepia .tts-divider {
-    background: rgba(120, 90, 60, 0.2);
 }
 
 .tts-speed-selector {
@@ -3280,12 +2303,6 @@ body.theme-light .tts-btn-speed {
     border-color: rgba(2, 132, 199, 0.25);
 }
 
-body.theme-sepia .tts-btn-speed {
-    background: rgba(180, 83, 9, 0.08);
-    color: #b45309;
-    border-color: rgba(180, 83, 9, 0.25);
-}
-
 .tts-speed-menu {
     position: absolute;
     bottom: calc(100% + 12px);
@@ -3307,12 +2324,6 @@ body.theme-light .tts-speed-menu {
     background: #ffffff;
     border-color: rgba(0, 0, 0, 0.12);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
-}
-
-body.theme-sepia .tts-speed-menu {
-    background: #fbf7ee;
-    border-color: rgba(120, 90, 60, 0.2);
-    box-shadow: 0 10px 28px rgba(80, 50, 20, 0.15);
 }
 
 .tts-speed-option {
@@ -3342,15 +2353,6 @@ body.theme-light .tts-speed-option {
         color: #0f172a;
     }
 
-body.theme-sepia .tts-speed-option {
-    color: #5c4730;
-}
-
-    body.theme-sepia .tts-speed-option:hover {
-        background: rgba(120, 90, 60, 0.1);
-        color: #1e160e;
-    }
-
 .tts-speed-option.active {
     background: #38bdf8 !important;
     color: #0f172a !important;
@@ -3359,11 +2361,6 @@ body.theme-sepia .tts-speed-option {
 
 body.theme-light .tts-speed-option.active {
     background: #0284c7 !important;
-    color: #ffffff !important;
-}
-
-body.theme-sepia .tts-speed-option.active {
-    background: #b45309 !important;
     color: #ffffff !important;
 }
 
@@ -3388,19 +2385,10 @@ body.theme-light .tts-btn-close {
         background: rgba(220, 38, 38, 0.12);
     }
 
-body.theme-sepia .tts-btn-close {
-    color: #8c735a;
-}
+/* ==========================================================================
+   LIBRARY: PANELS & ALBUM FORM
+   ========================================================================== */
 
-    body.theme-sepia .tts-btn-close:hover {
-        color: #b91c1c;
-        background: rgba(185, 28, 28, 0.12);
-    }
-
-/* =========================================================================
-   MILESTONE-SLICE-ONLY RULES (Tuan 7): library panels, language switch spacing,
-   album form hint and the TTS toggle on narrow screens.
-   ========================================================================= */
 .library-panel[hidden] {
     display: none;
 }
@@ -3445,11 +2433,10 @@ body.theme-sepia .tts-btn-close {
     }
 }
 
-/* =========================================================================
-   LIBRARY REDESIGN (Tuan 7)
-   Mobile-first header, Poster book cards (bk-*), bookshelf albums (alb-*).
-   Toolbar, format-section and tab rules above are reused as they are.
-   ========================================================================= */
+/* ==========================================================================
+   LIBRARY REDESIGN: HEADER, POSTER CARDS, SHELF ALBUMS
+   ========================================================================== */
+
 .library-page {
     padding: 22px 16px 56px;
 }
@@ -3550,6 +2537,8 @@ body.theme-sepia .tts-btn-close {
 .bk-card[hidden] {
     display: none !important;
 }
+
+/* --- Poster book cards --- */
 
 .bk-grid {
     display: grid;
@@ -3780,9 +2769,21 @@ body.theme-sepia .tts-btn-close {
 }
 
 .is-list .bk-act {
+    width: auto;
     height: 34px;
     font-size: 0.82rem;
+    white-space: nowrap;
 }
+
+.is-list .bk-delete-form {
+    display: flex;
+}
+
+    .is-list .bk-delete-form .bk-act {
+        flex: 1;
+    }
+
+/* --- Shelf albums --- */
 
 .alb-stack {
     display: flex;
@@ -3964,6 +2965,7 @@ body.theme-sepia .tts-btn-close {
 
     .is-list .bk-actions {
         flex: 0 0 auto;
+        margin-left: auto;
     }
 
     .is-list .bk-act,
@@ -4082,13 +3084,11 @@ body.theme-sepia .tts-btn-close {
         }
 }
 
-/* =========================================================================
-   GATEWAY RESPONSIVE (Tuan 7)
-   The Gateway card had no responsive rules: 70px side padding squeezed the
-   content on phones and the recovery-key row overflowed the card.
-   ========================================================================= */
-.gateway-card,
-.landing-card {
+/* ==========================================================================
+   GATEWAY: RESPONSIVE
+   ========================================================================== */
+
+.gateway-card {
     min-width: 0;
 }
 
@@ -4117,8 +3117,7 @@ body.theme-sepia .tts-btn-close {
         padding: 24px 14px;
     }
 
-    .gateway-card,
-    .landing-card {
+    .gateway-card {
         padding: 40px 36px;
         border-radius: 48px !important;
     }
@@ -4134,8 +3133,7 @@ body.theme-sepia .tts-btn-close {
         padding: 16px 12px;
     }
 
-    .gateway-card,
-    .landing-card {
+    .gateway-card {
         padding: 28px 18px;
         border-width: 1px;
         border-radius: 28px !important;
@@ -4152,8 +3150,7 @@ body.theme-sepia .tts-btn-close {
         margin-bottom: 22px;
     }
 
-    .upload-dropzone-large,
-    .upload-dropzone {
+    .upload-dropzone-large {
         min-height: 130px;
         padding: 18px 14px;
         border-radius: 20px;
@@ -4167,8 +3164,7 @@ body.theme-sepia .tts-btn-close {
         font-size: 0.95rem;
     }
 
-    .btn-gateway,
-    .landing-upload-btn {
+    .btn-gateway {
         padding: 13px 18px;
         font-size: 1rem;
         border-radius: 14px;
@@ -4178,8 +3174,7 @@ body.theme-sepia .tts-btn-close {
         margin-top: 14px;
     }
 
-    .gateway-divider,
-    .landing-divider {
+    .gateway-divider {
         margin: 22px 0;
     }
 
@@ -4192,8 +3187,7 @@ body.theme-sepia .tts-btn-close {
             width: 100%;
         }
 
-    .gateway-input,
-    .landing-input {
+    .gateway-input {
         width: 100%;
         padding: 13px 16px;
         border-radius: 14px;

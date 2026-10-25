@@ -156,7 +156,9 @@
                                                 data-book-author="@(book.Author ?? "")"
                                                 data-i18n="lib.rename"
                                                 data-i18n-title="lib.renameTitle"
-                                                title="Rename book">Rename</button>
+                                                title="Rename book">
+                                            Rename
+                                        </button>
                                         <form asp-controller="Library" asp-action="Delete" method="post" class="bk-delete-form book-delete-form">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@book.Id" />
@@ -281,6 +283,24 @@
             <div class="lib-modal-footer">
                 <button type="button" class="lib-btn lib-btn-secondary" data-close-modal="book-albums-modal-backdrop" data-i18n="modal.cancel">Cancel</button>
                 <button type="button" id="book-albums-save-btn" class="lib-btn lib-btn-primary" data-i18n="modal.save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="album-add-books-modal-backdrop" class="lib-modal-backdrop" style="display:none;">
+        <div class="lib-modal-card" role="dialog" aria-modal="true" aria-labelledby="album-add-books-modal-title">
+            <div class="lib-modal-header">
+                <h3 id="album-add-books-modal-title" class="lib-modal-title" data-i18n="album.addBooksTitle">Add books to album</h3>
+                <button type="button" class="lib-modal-close-btn" data-close-modal="album-add-books-modal-backdrop" data-i18n-aria="modal.close" aria-label="Close">&times;</button>
+            </div>
+            <div class="lib-modal-body">
+                <input type="hidden" id="album-add-books-album-id" value="" />
+                <p id="album-add-books-none" class="sidebar-list-empty" data-i18n="album.addBooksNone" hidden>All your books are already in this album.</p>
+                <div id="album-add-books-list" class="lib-checkbox-list"></div>
+            </div>
+            <div class="lib-modal-footer">
+                <button type="button" class="lib-btn lib-btn-secondary" data-close-modal="album-add-books-modal-backdrop" data-i18n="modal.cancel">Cancel</button>
+                <button type="button" id="album-add-books-save-btn" class="lib-btn lib-btn-primary" data-i18n="album.addBooksConfirm">Add</button>
             </div>
         </div>
     </div>

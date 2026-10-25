@@ -16,8 +16,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var pageFrame = document.getElementById('page-frame');
     var pageTrack = document.getElementById('page-track');
     var pageIndicator = document.getElementById('page-indicator');
-    var arrowLeft = document.getElementById('page-arrow-left');
-    var arrowRight = document.getElementById('page-arrow-right');
     var chapterListItems = document.querySelectorAll('.chapter-list-item');
     var prevChapterBtn = document.getElementById('prev-chapter-btn');
     var nextChapterBtn = document.getElementById('next-chapter-btn');
@@ -33,9 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var chapters = bootstrap.chapters || [];
     var bookmarks = bootstrap.bookmarks || [];
     var currentChapterId = bootstrap.landingChapterId;
-    var currentPage = 0;
-    var totalPages = 1;
-    var pageStep = 0;
+    var POSITION_SCALE = 1000;
+    var BOOKMARK_TOLERANCE = 15;
+    var KEY_SCROLL_STEP = 80;
+    var currentPosition = 0;
+    var restorePositionTarget = null;
+    var restorePositionTimer = null;
+    var scrollTicking = false;
     var pendingLandingPage = bootstrap.landingPage || 0;
     var progressSaveTimeout = null;
 
@@ -55,68 +57,65 @@ document.addEventListener('DOMContentLoaded', function () {
         return [pageTrack, translationView].filter(function (el) { return !!el; });
     }
 
-    function recalculatePagination() {
-        if (!pageFrame || !pageTrack || translationModeOn) return;
-
-        var frameStyle = window.getComputedStyle(pageFrame);
-        var frameWidth = Math.floor(pageFrame.clientWidth - (parseFloat(frameStyle.paddingLeft) || 0) - (parseFloat(frameStyle.paddingRight) || 0));
-        if (frameWidth < 1) return;
-        pageTrack.style.columnWidth = frameWidth + 'px';
-        pageTrack.style.width = frameWidth + 'px';
-        pageTrack.style.transform = 'translateX(0px)';
-
-        var gap = 64;
-        pageStep = frameWidth + gap;
-
-        var scrollWidth = pageTrack.scrollWidth;
-        totalPages = Math.max(1, Math.round((scrollWidth + gap) / pageStep));
-
-        if (currentPage >= totalPages) {
-            currentPage = totalPages - 1;
-        }
-        if (currentPage < 0) {
-            currentPage = 0;
-        }
-
-        applyPageTransform();
-        updatePageIndicator();
+    function maxScrollTop() {
+        return Math.max(0, pageFrame.scrollHeight - pageFrame.clientHeight);
     }
 
-    function applyPageTransform() {
-        if (!pageTrack) return;
-        pageTrack.style.transform = 'translateX(' + (-currentPage * pageStep) + 'px)';
+    function readPosition() {
+        var max = maxScrollTop();
+        if (max === 0) return 0;
+        return Math.round(pageFrame.scrollTop / max * POSITION_SCALE);
+    }
+
+    function scrollToPosition(position) {
+        var clamped = Math.min(Math.max(position, 0), POSITION_SCALE);
+        pageFrame.scrollTop = clamped / POSITION_SCALE * maxScrollTop();
+    }
+
+    function restorePosition(position) {
+        scrollToPosition(position);
+        restorePositionTarget = position;
+        clearTimeout(restorePositionTimer);
+        restorePositionTimer = setTimeout(cancelRestorePosition, 2000);
+    }
+
+    function cancelRestorePosition() {
+        restorePositionTarget = null;
+    }
+
+    function keepRestoredPosition() {
+        if (restorePositionTarget !== null) scrollToPosition(restorePositionTarget);
     }
 
     function updatePageIndicator() {
         if (pageIndicator) {
-            pageIndicator.textContent = (currentPage + 1) + ' / ' + totalPages;
+            pageIndicator.textContent = Math.round(currentPosition / 10) + '%';
         }
         refreshBookmarkButtonState();
     }
 
     function onPositionChanged() {
+        currentPosition = readPosition();
         updatePageIndicator();
         scheduleProgressSave();
     }
 
-    function goToNextPage() {
-        if (currentPage < totalPages - 1) {
-            currentPage++;
-            applyPageTransform();
+    function handleScroll() {
+        if (translationModeOn || scrollTicking) return;
+
+        scrollTicking = true;
+        window.requestAnimationFrame(function () {
+            scrollTicking = false;
             onPositionChanged();
-        } else {
-            goToAdjacentChapter(1);
-        }
+        });
     }
 
-    function goToPrevPage() {
-        if (currentPage > 0) {
-            currentPage--;
-            applyPageTransform();
-            onPositionChanged();
-        } else {
-            goToAdjacentChapter(-1);
-        }
+    function scrollPageBy(amount, smooth) {
+        pageFrame.scrollBy({ top: amount, behavior: smooth ? 'smooth' : 'auto' });
+    }
+
+    function scrollOneScreen(direction) {
+        scrollPageBy(direction * pageFrame.clientHeight * 0.9, true);
     }
 
     function findChapterIndex(chapterId) {
@@ -133,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var targetIndex = index + direction;
         if (targetIndex < 0 || targetIndex >= chapters.length) return;
 
-        loadChapter(chapters[targetIndex].id, direction > 0 ? 'first' : 'last');
+        loadChapter(chapters[targetIndex].id, 'first');
     }
 
     function setActiveChapterListItem(chapterId) {
@@ -164,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 setActiveChapterListItem(chapterId);
                 document.dispatchEvent(new CustomEvent('dualread:chapterchange'));
 
-                currentPage = 0;
+                currentPosition = 0;
 
                 if (translationModeOn) {
                     renderTranslationView();
@@ -172,15 +171,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                recalculatePagination();
-
-                if (landing === 'last') {
-                    currentPage = totalPages - 1;
-                } else if (typeof landing === 'number') {
-                    currentPage = Math.min(Math.max(landing, 0), totalPages - 1);
+                if (typeof landing === 'number') {
+                    restorePosition(landing);
+                } else {
+                    cancelRestorePosition();
+                    pageFrame.scrollTop = 0;
                 }
-
-                applyPageTransform();
                 onPositionChanged();
             })
             .catch(function (err) {
@@ -202,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/Reader/' + bootstrap.bookId + '/Progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chapterId: currentChapterId, page: currentPage, translationModeOn: translationModeOn }),
+            body: JSON.stringify({ chapterId: currentChapterId, page: currentPosition, translationModeOn: translationModeOn }),
             keepalive: true
         }).catch(function (err) {
             console.error('Progress save error:', err);
@@ -407,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (pageIndicator) pageIndicator.hidden = false;
             if (bookmarkToggleBtn) bookmarkToggleBtn.style.display = '';
             if (saveStatusEl) saveStatusEl.hidden = true;
-            recalculatePagination();
+            restorePosition(currentPosition);
         }
 
         document.dispatchEvent(new CustomEvent('dualread:modechange'));
@@ -419,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function findBookmarkAtCurrentPosition() {
         for (var i = 0; i < bookmarks.length; i++) {
-            if (bookmarks[i].chapterId === currentChapterId && bookmarks[i].page === currentPage) {
+            if (bookmarks[i].chapterId === currentChapterId && Math.abs(bookmarks[i].page - currentPosition) <= BOOKMARK_TOLERANCE) {
                 return bookmarks[i];
             }
         }
@@ -437,12 +433,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getCurrentPagePreviewText() {
         if (!pageTrack) return '';
-        var text = (pageTrack.textContent || '').replace(/\s+/g, ' ').trim();
-        if (!text) return '';
 
-        var approxCharsPerPage = Math.max(1, Math.floor(text.length / totalPages));
-        var start = Math.min(text.length - 1, currentPage * approxCharsPerPage);
-        return text.substr(start, 80).trim();
+        var paragraph = pageTrack.querySelector('p[data-p-index="' + firstVisibleParagraphIndex() + '"]');
+        var source = paragraph ? paragraph.textContent : pageTrack.textContent;
+        return (source || '').replace(/\s+/g, ' ').trim().substr(0, 80);
     }
 
     function appendBookmarkToSidebar(bookmark) {
@@ -461,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function () {
         label.className = 'bookmark-preview-text';
         label.textContent = bookmark.previewText && bookmark.previewText.length > 0
             ? bookmark.previewText
-            : t('reader.pageLabel', { n: bookmark.page + 1 });
+            : t('reader.positionLabel', { n: Math.round(bookmark.page / 10) });
 
         var del = document.createElement('button');
         del.type = 'button';
@@ -485,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chapterId: currentChapterId,
-                page: currentPage,
+                page: currentPosition,
                 previewText: getCurrentPagePreviewText()
             })
         })
@@ -533,8 +527,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (chapterId === currentChapterId) {
             if (translationModeOn) return;
-            currentPage = Math.min(Math.max(page, 0), totalPages - 1);
-            applyPageTransform();
+            restorePosition(page);
             onPositionChanged();
         } else {
             loadChapter(chapterId, page);
@@ -572,8 +565,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (arrowRight) arrowRight.addEventListener('click', function () { goToNextPage(); arrowRight.blur(); });
-    if (arrowLeft) arrowLeft.addEventListener('click', function () { goToPrevPage(); arrowLeft.blur(); });
     if (nextChapterBtn) nextChapterBtn.addEventListener('click', function () { goToAdjacentChapter(1); nextChapterBtn.blur(); });
     if (prevChapterBtn) prevChapterBtn.addEventListener('click', function () { goToAdjacentChapter(-1); prevChapterBtn.blur(); });
     if (trNextChapterBtn) trNextChapterBtn.addEventListener('click', function () { goToAdjacentChapter(1); trNextChapterBtn.blur(); });
@@ -607,21 +598,24 @@ document.addEventListener('DOMContentLoaded', function () {
         switch (e.key) {
             case ' ':
             case 'Spacebar':
-            case 'ArrowRight':
                 e.preventDefault();
-                goToNextPage();
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                goToPrevPage();
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                adjustFontSize(1);
+                scrollOneScreen(e.shiftKey ? -1 : 1);
                 break;
             case 'ArrowDown':
                 e.preventDefault();
-                adjustFontSize(-1);
+                scrollPageBy(KEY_SCROLL_STEP, false);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                scrollPageBy(-KEY_SCROLL_STEP, false);
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                if (!e.repeat) goToAdjacentChapter(1);
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                if (!e.repeat) goToAdjacentChapter(-1);
                 break;
             case 'b':
             case 'B':
@@ -683,18 +677,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function afterLayoutSettingChange() {
-        recalculatePagination();
         if (translationModeOn) autoResizeAllTextareas();
-    }
-
-    function adjustFontSize(delta) {
-        var fontSizeInput = document.getElementById('setting-font-size');
-        if (!fontSizeInput) return;
-        var newValue = Math.min(32, Math.max(12, parseInt(fontSizeInput.value, 10) + delta * 2));
-        fontSizeInput.value = newValue;
-        applyFontSize(newValue);
-        afterLayoutSettingChange();
-        scheduleSettingsSave();
     }
 
     function applyFontSize(px) {
@@ -867,17 +850,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function revealParagraphPage(paragraph) {
-        if (!pageFrame || pageStep <= 0) return;
-
+    function scrollParagraphIntoView(paragraph) {
         var frameRect = pageFrame.getBoundingClientRect();
         var rect = paragraph.getBoundingClientRect();
-        var deltaPages = Math.floor((rect.left - frameRect.left + 1) / pageStep);
-        if (deltaPages === 0) return;
+        var isComfortablyVisible = rect.top >= frameRect.top + 20 && rect.bottom <= frameRect.bottom - 20;
+        if (isComfortablyVisible) return;
 
-        currentPage = Math.min(Math.max(currentPage + deltaPages, 0), totalPages - 1);
-        applyPageTransform();
-        onPositionChanged();
+        paragraph.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
 
     function firstVisibleParagraphIndex() {
@@ -902,13 +881,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var frameRect = pageFrame.getBoundingClientRect();
         for (i = 0; i < nodes.length; i++) {
             rect = nodes[i].getBoundingClientRect();
-            if (rect.left >= frameRect.left - 2 && rect.left < frameRect.right - 2) {
-                return Number(nodes[i].getAttribute('data-p-index'));
-            }
-        }
-        for (i = 0; i < nodes.length; i++) {
-            rect = nodes[i].getBoundingClientRect();
-            if (rect.right > frameRect.left) {
+            if (rect.bottom > frameRect.top + 4) {
                 return Number(nodes[i].getAttribute('data-p-index'));
             }
         }
@@ -939,7 +912,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 var paragraph = pageTrack.querySelector('p[data-p-index="' + index + '"]');
                 if (paragraph) {
                     paragraph.classList.add('tts-highlight-active');
-                    revealParagraphPage(paragraph);
+                    scrollParagraphIntoView(paragraph);
                 }
             }
         },
@@ -970,13 +943,19 @@ document.addEventListener('DOMContentLoaded', function () {
     applyInitialSettings();
 
     if (pageFrame && pageTrack) {
-        recalculatePagination();
+        pageFrame.addEventListener('scroll', handleScroll, { passive: true });
+        pageTrack.addEventListener('load', keepRestoredPosition, true);
+        window.addEventListener('load', keepRestoredPosition);
+        ['wheel', 'touchstart', 'mousedown'].forEach(function (eventName) {
+            pageFrame.addEventListener(eventName, cancelRestorePosition, { passive: true });
+        });
+        document.addEventListener('keydown', cancelRestorePosition);
 
+        currentPosition = pendingLandingPage;
         if (pendingLandingPage > 0) {
-            currentPage = Math.min(pendingLandingPage, totalPages - 1);
-            applyPageTransform();
-            updatePageIndicator();
+            restorePosition(pendingLandingPage);
         }
+        updatePageIndicator();
 
         if (canTranslate && bootstrap.translationModeOn) {
             setTranslationMode(true, true);

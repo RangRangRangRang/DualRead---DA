@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -8,6 +9,10 @@ namespace DualRead.Controllers;
 [Route("api/translate")]
 public class QuickTranslateController : ControllerBase
 {
+    private const int MaxTextLength = 8000;
+    private const string GoogleSingleUrl = "https://translate.googleapis.com/translate_a/single";
+    private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
     private readonly IMemoryCache _cache;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<QuickTranslateController> _logger;
@@ -30,196 +35,211 @@ public class QuickTranslateController : ControllerBase
         }
 
         var trimmed = inputText.Trim();
-        if (trimmed.Length > 8000)
+        if (trimmed.Length > MaxTextLength)
         {
-            trimmed = trimmed.Substring(0, 8000);
+            trimmed = trimmed[..MaxTextLength];
         }
 
         var cacheKey = $"trans:{sl}:{tl}:{trimmed.ToLowerInvariant()}";
-        if (_cache.TryGetValue(cacheKey, out QuickTranslateResult? cached) && cached != null)
+        if (_cache.TryGetValue(cacheKey, out QuickTranslateResult? cached) && cached is not null)
         {
             return Ok(cached);
         }
 
-        var result = await PerformTranslationAsync(trimmed, sl, tl);
-        if (result != null)
+        var result = await TranslateWithFallbacksAsync(trimmed, sl, tl);
+        if (result is null)
         {
-            _cache.Set(cacheKey, result, TimeSpan.FromHours(24));
-            return Ok(result);
+            return StatusCode(502, new { error = "Translation service temporarily unavailable." });
         }
 
-        return StatusCode(502, new { error = "Translation service temporarily unavailable." });
+        _cache.Set(cacheKey, result, TimeSpan.FromHours(24));
+        return Ok(result);
     }
 
-    private async Task<QuickTranslateResult?> PerformTranslationAsync(string text, string sl, string tl)
+    private async Task<QuickTranslateResult?> TranslateWithFallbacksAsync(string text, string sl, string tl)
     {
-        var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(10);
-        client.DefaultRequestHeaders.Clear();
-        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+        var client = CreateHttpClient();
+        var wantsDictionary = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length <= 2;
 
-        var isSingleWord = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length <= 2;
-
-        try
+        var attempts = new List<Func<Task<QuickTranslateResult?>>>
         {
-            var formParams = new List<KeyValuePair<string, string>>
-            {
-                new("client", "gtx"),
-                new("sl", sl),
-                new("tl", tl),
-                new("dt", "t"),
-                new("q", text)
-            };
+            () => TranslateWithPostAsync(client, text, sl, tl, wantsDictionary),
+            () => TranslateWithGetAsync(client, text, sl, tl, wantsDictionary),
+            () => TranslateWithBackupEndpointAsync(client, text, sl, tl)
+        };
 
-            if (isSingleWord)
+        foreach (var attempt in attempts)
+        {
+            try
             {
-                formParams.Add(new("dt", "bd"));
-            }
-
-            var formContent = new FormUrlEncodedContent(formParams);
-            var response = await client.PostAsync("https://translate.googleapis.com/translate_a/single", formContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonString = await response.Content.ReadAsStringAsync();
-                var parsed = ParseGoogleTranslateJson(jsonString, text);
-                if (parsed != null && !string.IsNullOrWhiteSpace(parsed.TranslatedText))
+                var result = await attempt();
+                if (result is not null)
                 {
-                    return parsed;
+                    return result;
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Primary translation strategy (POST gtx) failed.");
-        }
-
-        try
-        {
-            var url = isSingleWord
-                ? $"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl}&tl={tl}&dt=t&dt=bd&q={Uri.EscapeDataString(text)}"
-                : $"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl}&tl={tl}&dt=t&q={Uri.EscapeDataString(text)}";
-
-            var response = await client.GetAsync(url);
-            if (response.IsSuccessStatusCode)
+            catch (Exception ex)
             {
-                var jsonString = await response.Content.ReadAsStringAsync();
-                var parsed = ParseGoogleTranslateJson(jsonString, text);
-                if (parsed != null && !string.IsNullOrWhiteSpace(parsed.TranslatedText))
-                {
-                    return parsed;
-                }
+                _logger.LogWarning(ex, "A translation attempt failed, trying the next one.");
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Secondary translation strategy (GET gtx) failed.");
-        }
-
-        try
-        {
-            var fallbackUrl = $"https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={sl}&tl={tl}&q={Uri.EscapeDataString(text)}";
-            var fallbackResponse = await client.GetAsync(fallbackUrl);
-            if (fallbackResponse.IsSuccessStatusCode)
-            {
-                var json = await fallbackResponse.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
-                {
-                    var trans = doc.RootElement[0].GetString() ?? "";
-                    if (!string.IsNullOrWhiteSpace(trans))
-                    {
-                        return new QuickTranslateResult
-                        {
-                            OriginalText = text,
-                            TranslatedText = trans
-                        };
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Tertiary translation strategy failed.");
         }
 
         return null;
     }
 
-    private static QuickTranslateResult? ParseGoogleTranslateJson(string jsonString, string original)
+    private HttpClient CreateHttpClient()
+    {
+        var client = _httpClientFactory.CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(10);
+        client.DefaultRequestHeaders.Clear();
+        client.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+        return client;
+    }
+
+    private static async Task<QuickTranslateResult?> TranslateWithPostAsync(HttpClient client, string text, string sl, string tl, bool wantsDictionary)
+    {
+        var form = new List<KeyValuePair<string, string>>
+        {
+            new("client", "gtx"),
+            new("sl", sl),
+            new("tl", tl),
+            new("dt", "t"),
+            new("q", text)
+        };
+
+        if (wantsDictionary)
+        {
+            form.Add(new("dt", "bd"));
+        }
+
+        var response = await client.PostAsync(GoogleSingleUrl, new FormUrlEncodedContent(form));
+        return ParseUsableResult(await ReadBodyAsync(response), text);
+    }
+
+    private static async Task<QuickTranslateResult?> TranslateWithGetAsync(HttpClient client, string text, string sl, string tl, bool wantsDictionary)
+    {
+        var dictionaryPart = wantsDictionary ? "&dt=bd" : string.Empty;
+        var url = $"{GoogleSingleUrl}?client=gtx&sl={sl}&tl={tl}&dt=t{dictionaryPart}&q={Uri.EscapeDataString(text)}";
+
+        var response = await client.GetAsync(url);
+        return ParseUsableResult(await ReadBodyAsync(response), text);
+    }
+
+    private static async Task<QuickTranslateResult?> TranslateWithBackupEndpointAsync(HttpClient client, string text, string sl, string tl)
+    {
+        var url = $"https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={sl}&tl={tl}&q={Uri.EscapeDataString(text)}";
+
+        var response = await client.GetAsync(url);
+        var json = await ReadBodyAsync(response);
+        if (json is null)
+        {
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() == 0)
+        {
+            return null;
+        }
+
+        var translated = root[0].GetString();
+        if (string.IsNullOrWhiteSpace(translated))
+        {
+            return null;
+        }
+
+        return new QuickTranslateResult { OriginalText = text, TranslatedText = translated };
+    }
+
+    private static async Task<string?> ReadBodyAsync(HttpResponseMessage response)
+    {
+        return response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync() : null;
+    }
+
+    private static QuickTranslateResult? ParseUsableResult(string? json, string original)
+    {
+        if (json is null)
+        {
+            return null;
+        }
+
+        var parsed = ParseGoogleTranslateJson(json, original);
+        return parsed is not null && !string.IsNullOrWhiteSpace(parsed.TranslatedText) ? parsed : null;
+    }
+
+    private static QuickTranslateResult? ParseGoogleTranslateJson(string json, string original)
     {
         try
         {
-            using var doc = JsonDocument.Parse(jsonString);
-            var root = doc.RootElement;
-
-            var sb = new System.Text.StringBuilder();
-            if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
-            {
-                var sentences = root[0];
-                if (sentences.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var sentence in sentences.EnumerateArray())
-                    {
-                        if (sentence.ValueKind == JsonValueKind.Array && sentence.GetArrayLength() > 0)
-                        {
-                            var part = sentence[0].GetString();
-                            if (!string.IsNullOrEmpty(part))
-                            {
-                                sb.Append(part);
-                            }
-                        }
-                    }
-                }
-            }
-
-            var translatedText = sb.ToString().Trim();
-            if (string.IsNullOrEmpty(translatedText))
-            {
-                translatedText = original;
-            }
-
-            var dictEntries = new List<DictionaryEntry>();
-            if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 1)
-            {
-                var dictArray = root[1];
-                if (dictArray.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var group in dictArray.EnumerateArray())
-                    {
-                        if (group.ValueKind == JsonValueKind.Array && group.GetArrayLength() >= 2)
-                        {
-                            var pos = group[0].GetString() ?? "";
-                            var terms = new List<string>();
-                            if (group[1].ValueKind == JsonValueKind.Array)
-                            {
-                                foreach (var term in group[1].EnumerateArray())
-                                {
-                                    var termStr = term.GetString();
-                                    if (!string.IsNullOrEmpty(termStr)) terms.Add(termStr);
-                                }
-                            }
-
-                            if (!string.IsNullOrEmpty(pos) && terms.Count > 0)
-                            {
-                                dictEntries.Add(new DictionaryEntry { Pos = pos, Terms = terms.Take(5).ToList() });
-                            }
-                        }
-                    }
-                }
-            }
+            using var doc = JsonDocument.Parse(json);
+            var translated = ReadTranslatedText(doc.RootElement);
 
             return new QuickTranslateResult
             {
                 OriginalText = original,
-                TranslatedText = translatedText,
-                Dict = dictEntries
+                TranslatedText = string.IsNullOrEmpty(translated) ? original : translated,
+                Dict = ReadDictionary(doc.RootElement)
             };
         }
         catch
         {
             return null;
         }
+    }
+
+    private static string ReadTranslatedText(JsonElement root)
+    {
+        var text = new StringBuilder();
+
+        foreach (var sentence in ChildrenAt(root, 0))
+        {
+            if (sentence.ValueKind == JsonValueKind.Array && sentence.GetArrayLength() > 0)
+            {
+                text.Append(sentence[0].GetString());
+            }
+        }
+
+        return text.ToString().Trim();
+    }
+
+    private static List<DictionaryEntry> ReadDictionary(JsonElement root)
+    {
+        var entries = new List<DictionaryEntry>();
+
+        foreach (var group in ChildrenAt(root, 1))
+        {
+            if (group.ValueKind != JsonValueKind.Array || group.GetArrayLength() < 2)
+            {
+                continue;
+            }
+
+            var pos = group[0].GetString() ?? string.Empty;
+            var terms = ChildrenAt(group, 1)
+                .Select(term => term.GetString())
+                .OfType<string>()
+                .Where(term => term.Length > 0)
+                .Take(5)
+                .ToList();
+
+            if (pos.Length > 0 && terms.Count > 0)
+            {
+                entries.Add(new DictionaryEntry { Pos = pos, Terms = terms });
+            }
+        }
+
+        return entries;
+    }
+
+    private static IEnumerable<JsonElement> ChildrenAt(JsonElement parent, int index)
+    {
+        if (parent.ValueKind != JsonValueKind.Array || parent.GetArrayLength() <= index)
+        {
+            return Enumerable.Empty<JsonElement>();
+        }
+
+        var child = parent[index];
+        return child.ValueKind == JsonValueKind.Array ? child.EnumerateArray() : Enumerable.Empty<JsonElement>();
     }
 }
 

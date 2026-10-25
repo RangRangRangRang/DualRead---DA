@@ -383,6 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
             '<span class="alb-count">' + escapeHtml(t('album.books', { n: album.bookCount || 0 })) + '</span>' +
             '</div>' +
             '<div class="alb-ctrl">' +
+            '<button type="button" class="lib-btn lib-btn-sm lib-btn-primary album-add-books-btn" data-album-id="' + album.id + '">' + escapeHtml(t('album.addBooks')) + '</button>' +
             '<button type="button" class="lib-btn lib-btn-sm lib-btn-secondary album-rename-btn" data-album-id="' + album.id + '">' + escapeHtml(t('album.rename')) + '</button>' +
             '<button type="button" class="lib-btn lib-btn-sm lib-btn-danger album-delete-btn" data-album-id="' + album.id + '">' + escapeHtml(t('album.delete')) + '</button>' +
             '</div>' +
@@ -502,6 +503,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         console.error('Album delete error:', err);
                         window.alert(t('album.error'));
                     });
+                return;
+            }
+
+            var addBooksBtn = e.target.closest('.album-add-books-btn');
+            if (addBooksBtn) {
+                openAddBooks(addBooksBtn.getAttribute('data-album-id'));
                 return;
             }
 
@@ -626,6 +633,92 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .finally(function () {
                     booksAlbumsSaveBtn.disabled = false;
+                });
+        });
+    }
+
+    var addBooksList = byId('album-add-books-list');
+    var addBooksNone = byId('album-add-books-none');
+    var addBooksSaveBtn = byId('album-add-books-save-btn');
+
+    function listLibraryBooks() {
+        var books = [];
+        document.querySelectorAll('.bk-card').forEach(function (card) {
+            books.push({
+                id: card.getAttribute('data-book-id'),
+                title: card.getAttribute('data-title') || ''
+            });
+        });
+        return books;
+    }
+
+    function openAddBooks(albumId) {
+        var album = findAlbum(albumId);
+        if (!album) return;
+
+        var inAlbum = {};
+        (album.books || []).forEach(function (book) { inAlbum[book.id] = true; });
+
+        var available = listLibraryBooks().filter(function (book) { return !inAlbum[book.id]; });
+
+        byId('album-add-books-album-id').value = albumId;
+        addBooksNone.hidden = available.length > 0;
+        addBooksSaveBtn.disabled = available.length === 0;
+        addBooksList.innerHTML = available.map(function (book) {
+            return '' +
+                '<label class="lib-checkbox-item">' +
+                '<input type="checkbox" value="' + book.id + '" class="album-add-book-input" />' +
+                '<span class="lib-checkbox-custom"></span>' +
+                '<div class="lib-checkbox-text">' +
+                '<span class="lib-checkbox-title">' + escapeHtml(book.title) + '</span>' +
+                '</div>' +
+                '</label>';
+        }).join('');
+
+        openModal('album-add-books-modal-backdrop');
+    }
+
+    function addBookToAlbum(bookId, albumId) {
+        return fetch('/api/albums/book/' + bookId)
+            .then(function (res) {
+                if (!res.ok) throw new Error('Load book albums failed');
+                return res.json();
+            })
+            .then(function (albumIds) {
+                if (albumIds.indexOf(albumId) === -1) albumIds.push(albumId);
+                return sendJson('/api/albums/book/' + bookId, 'POST', { albumIds: albumIds });
+            })
+            .then(function (res) {
+                if (!res.ok) throw new Error('Add book failed');
+            });
+    }
+
+    if (addBooksSaveBtn) {
+        addBooksSaveBtn.addEventListener('click', function () {
+            var albumId = byId('album-add-books-album-id').value;
+            var bookIds = [];
+            addBooksList.querySelectorAll('.album-add-book-input:checked').forEach(function (input) {
+                bookIds.push(input.value);
+            });
+
+            if (!albumId || bookIds.length === 0) {
+                closeModal('album-add-books-modal-backdrop');
+                return;
+            }
+
+            addBooksSaveBtn.disabled = true;
+
+            Promise.all(bookIds.map(function (bookId) { return addBookToAlbum(bookId, albumId); }))
+                .then(function () {
+                    closeModal('album-add-books-modal-backdrop');
+                    return loadAlbums();
+                })
+                .catch(function (err) {
+                    console.error('Add books to album error:', err);
+                    window.alert(t('album.error'));
+                })
+                .finally(function () {
+                    addBooksSaveBtn.disabled = false;
                 });
         });
     }

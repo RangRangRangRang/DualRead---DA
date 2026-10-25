@@ -1,10 +1,10 @@
 using DualRead.Data;
-using Microsoft.AspNetCore.HttpOverrides;
 using DualRead.Services;
 using DualRead.Services.Implementations;
 using DualRead.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +14,6 @@ var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 if (!string.IsNullOrWhiteSpace(databaseUrl))
 {
     configuredConnectionString = ConvertDatabaseUrlToNpgsqlConnectionString(databaseUrl);
-    builder.Configuration["ConnectionStrings:DefaultConnection"] = configuredConnectionString;
 }
 
 var port = Environment.GetEnvironmentVariable("PORT");
@@ -76,20 +75,12 @@ app.UseStaticFiles();
 
 var uploadsRoot = Path.Combine(app.Environment.ContentRootPath, "Uploads");
 Directory.CreateDirectory(uploadsRoot);
-var assetContentTypes = new FileExtensionContentTypeProvider();
-assetContentTypes.Mappings.Clear();
-assetContentTypes.Mappings[".jpg"] = "image/jpeg";
-assetContentTypes.Mappings[".jpeg"] = "image/jpeg";
-assetContentTypes.Mappings[".png"] = "image/png";
-assetContentTypes.Mappings[".gif"] = "image/gif";
-assetContentTypes.Mappings[".webp"] = "image/webp";
-assetContentTypes.Mappings[".svg"] = "image/svg+xml";
 
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsRoot),
     RequestPath = "/library-assets",
-    ContentTypeProvider = assetContentTypes,
+    ContentTypeProvider = CreateImageOnlyContentTypes(),
     ServeUnknownFileTypes = false
 });
 
@@ -117,12 +108,7 @@ static string ConvertDatabaseUrlToNpgsqlConnectionString(string databaseUrl)
     var database = uri.AbsolutePath.TrimStart('/');
 
     var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-    var sslMode = query.TryGetValue("sslmode", out var sslModeValue) ? sslModeValue.ToString() switch
-    {
-        "disable" => "Disable",
-        "require" or "verify-ca" or "verify-full" => "Require",
-        _ => "Prefer"
-    } : "Prefer";
+    var sslModeText = query.TryGetValue("sslmode", out var sslModeValue) ? sslModeValue.ToString() : string.Empty;
 
     var connectionStringBuilder = new Npgsql.NpgsqlConnectionStringBuilder
     {
@@ -131,8 +117,26 @@ static string ConvertDatabaseUrlToNpgsqlConnectionString(string databaseUrl)
         Username = username,
         Password = password,
         Database = database,
-        SslMode = Enum.Parse<Npgsql.SslMode>(sslMode)
+        SslMode = sslModeText switch
+        {
+            "disable" => Npgsql.SslMode.Disable,
+            "require" or "verify-ca" or "verify-full" => Npgsql.SslMode.Require,
+            _ => Npgsql.SslMode.Prefer
+        }
     };
 
     return connectionStringBuilder.ConnectionString;
+}
+
+static FileExtensionContentTypeProvider CreateImageOnlyContentTypes()
+{
+    var contentTypes = new FileExtensionContentTypeProvider();
+    contentTypes.Mappings.Clear();
+    contentTypes.Mappings[".jpg"] = "image/jpeg";
+    contentTypes.Mappings[".jpeg"] = "image/jpeg";
+    contentTypes.Mappings[".png"] = "image/png";
+    contentTypes.Mappings[".gif"] = "image/gif";
+    contentTypes.Mappings[".webp"] = "image/webp";
+    contentTypes.Mappings[".svg"] = "image/svg+xml";
+    return contentTypes;
 }

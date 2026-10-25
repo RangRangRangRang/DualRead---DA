@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var currentSelectionText = '';
     var currentChapterId = null;
-    var lastSavedId = null;
 
     function getCurrentChapterId() {
         var active = document.querySelector('.chapter-list-item.active');
@@ -168,8 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!res.ok) throw new Error('Save failed');
                 return res.json();
             })
-            .then(function (saved) {
-                lastSavedId = saved.id;
+            .then(function () {
                 saveBtn.textContent = t('qt.saved');
                 saveBtn.classList.add('saved');
             })

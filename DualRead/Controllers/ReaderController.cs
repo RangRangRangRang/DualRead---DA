@@ -114,8 +114,7 @@ public class ReaderController : Controller
             return NotFound();
         }
 
-        var chapters = await _bookService.GetChaptersAsync(id);
-        var chapter = chapters.FirstOrDefault(c => c.Id == chapterId);
+        var chapter = await FindChapterAsync(id, chapterId);
         if (chapter is null)
         {
             return NotFound();
@@ -134,8 +133,7 @@ public class ReaderController : Controller
             return NotFound();
         }
 
-        var chapters = await _bookService.GetChaptersAsync(id);
-        var chapter = chapters.FirstOrDefault(c => c.Id == chapterId);
+        var chapter = await FindChapterAsync(id, chapterId);
         if (chapter is null)
         {
             return NotFound();
@@ -172,8 +170,7 @@ public class ReaderController : Controller
             return StatusCode(StatusCodes.Status403Forbidden);
         }
 
-        var chapters = await _bookService.GetChaptersAsync(id);
-        if (chapters.All(c => c.Id != chapterId))
+        if (await FindChapterAsync(id, chapterId) is null)
         {
             return NotFound();
         }
@@ -196,8 +193,7 @@ public class ReaderController : Controller
             return StatusCode(StatusCodes.Status403Forbidden);
         }
 
-        var chapters = await _bookService.GetChaptersAsync(id);
-        if (chapters.All(c => c.Id != chapterId))
+        if (await FindChapterAsync(id, chapterId) is null)
         {
             return NotFound();
         }
@@ -247,6 +243,12 @@ public class ReaderController : Controller
         }
 
         return Ok();
+    }
+
+    private async Task<Chapter?> FindChapterAsync(Guid bookId, Guid chapterId)
+    {
+        var chapters = await _bookService.GetChaptersAsync(bookId);
+        return chapters.FirstOrDefault(c => c.Id == chapterId);
     }
 
     private async Task<Book?> GetOwnedBookAsync(Guid id)
