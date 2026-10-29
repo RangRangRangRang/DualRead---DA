@@ -8,8 +8,6 @@ namespace DualRead.Services;
 
 public class PdfParsingService : IPdfParsingService
 {
-    private const int PagesPerChapter = 15;
-
     public Task<ParsedEpubResult> ParseAsync(string absolutePdfFilePath)
     {
         if (!File.Exists(absolutePdfFilePath))
@@ -28,26 +26,11 @@ public class PdfParsingService : IPdfParsingService
 
         var (coverBytes, coverExt) = ExtractCoverImage(document);
 
-        var totalPages = document.NumberOfPages;
-        var chapters = new List<ParsedChapter>();
-        var order = 0;
-
-        for (var startPage = 1; startPage <= totalPages; startPage += PagesPerChapter)
+        var totalPages = Math.Max(document.NumberOfPages, 1);
+        var chapters = new List<ParsedChapter>
         {
-            var endPage = Math.Min(startPage + PagesPerChapter - 1, totalPages);
-            chapters.Add(new ParsedChapter
-            {
-                Order = order,
-                Title = totalPages <= PagesPerChapter ? finalTitle : $"Trang {startPage}-{endPage}",
-                EpubItemHref = $"{startPage}-{endPage}"
-            });
-            order++;
-        }
-
-        if (chapters.Count == 0)
-        {
-            chapters.Add(new ParsedChapter { Order = 0, Title = finalTitle, EpubItemHref = "1-1" });
-        }
+            new() { Order = 0, Title = finalTitle, EpubItemHref = $"1-{totalPages}" }
+        };
 
         var result = new ParsedEpubResult
         {

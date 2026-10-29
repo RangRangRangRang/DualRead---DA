@@ -111,10 +111,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function scrollPageBy(amount, smooth) {
+        if (!pageFrame) return;
         pageFrame.scrollBy({ top: amount, behavior: smooth ? 'smooth' : 'auto' });
     }
 
     function scrollOneScreen(direction) {
+        if (!pageFrame) return;
         scrollPageBy(direction * pageFrame.clientHeight * 0.9, true);
     }
 

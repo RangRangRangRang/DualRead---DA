@@ -58,7 +58,8 @@ public class ReaderController : Controller
         }
 
         var recoveryKey = await _currentRecoveryKeyAccessor.GetCurrentAsync();
-        var canTranslate = recoveryKey is not null && recoveryKey.Id == book.RecoveryKeyId;
+        var isPdf = book.Type == BookType.Pdf;
+        var canTranslate = !isPdf && recoveryKey is not null && recoveryKey.Id == book.RecoveryKeyId;
 
         var chapters = await _bookService.GetChaptersAsync(id);
         var progress = await _readingProgressService.GetByBookIdAsync(id);
@@ -82,8 +83,15 @@ public class ReaderController : Controller
             Settings = recoveryKey is null
                 ? new SettingsViewModel()
                 : SettingsViewModel.From(await _settingsService.GetAsync(recoveryKey.Id)),
-            TranslationModeOn = canTranslate && (progress?.TranslationModeOn ?? false)
+            TranslationModeOn = canTranslate && (progress?.TranslationModeOn ?? false),
+            IsPdf = isPdf,
+            PdfAvailable = isPdf && System.IO.File.Exists(book.EpubFilePath)
         };
+
+        if (isPdf)
+        {
+            return View(bundle);
+        }
 
         var landingChapter = chapters.FirstOrDefault();
         if (progress?.CurrentChapterId is not null)
@@ -103,6 +111,18 @@ public class ReaderController : Controller
         }
 
         return View(bundle);
+    }
+
+    [HttpGet("{id:guid}/Pdf")]
+    public async Task<IActionResult> Pdf(Guid id)
+    {
+        var book = await GetOwnedBookAsync(id);
+        if (book is null || book.Type != BookType.Pdf || !System.IO.File.Exists(book.EpubFilePath))
+        {
+            return NotFound();
+        }
+
+        return PhysicalFile(book.EpubFilePath, "application/pdf", enableRangeProcessing: true);
     }
 
     [HttpGet("{id:guid}/Chapter/{chapterId:guid}")]

@@ -129,7 +129,11 @@ public class BookService : IBookService
 
             if (parsed is not null)
             {
-                book.Title = string.IsNullOrWhiteSpace(parsed.Title) ? book.Title : parsed.Title;
+                if (bookType == BookType.Epub && !string.IsNullOrWhiteSpace(parsed.Title))
+                {
+                    book.Title = parsed.Title;
+                }
+
                 book.Author = parsed.Author;
 
                 if (parsed.CoverImageBytes is { Length: > 0 })
@@ -144,7 +148,7 @@ public class BookService : IBookService
                 {
                     BookId = bookId,
                     Order = c.Order,
-                    Title = c.Title,
+                    Title = c.Title == parsed.Title ? book.Title : c.Title,
                     EpubItemHref = c.EpubItemHref
                 }).ToList();
             }

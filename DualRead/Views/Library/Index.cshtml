@@ -131,7 +131,7 @@
                                 var started = Model.StartedBookIds.Contains(book.Id);
 
                                 <article class="bk-card" data-book-id="@book.Id" data-title="@book.Title" data-author="@(book.Author ?? "")" data-uploaded="@book.UploadedAtUtc.ToString("o")">
-                                    <div class="bk-cover">
+                                    <a class="bk-cover" asp-controller="Reader" asp-action="Index" asp-route-id="@book.Id" aria-label="@book.Title" tabindex="-1">
                                         @if (!string.IsNullOrEmpty(book.CoverImagePath))
                                         {
                                             <img src="@book.CoverImagePath" alt="@book.Title" loading="lazy" />
@@ -140,7 +140,7 @@
                                         {
                                             <div class="bk-placeholder"></div>
                                         }
-                                    </div>
+                                    </a>
                                     <span class="bk-badge format-badge format-badge-@formatCode">@book.Type</span>
                                     <div class="bk-info">
                                         <h3 class="bk-title" title="@book.Title">@book.Title</h3>

@@ -31,49 +31,52 @@
             <button type="button" class="sidebar-close-btn" aria-label="Close" data-i18n-aria="reader.close" data-close-sidebar>&times;</button>
         </div>
 
-        <div class="sidebar-section">
-            <button type="button" class="sidebar-toggle" data-panel="panel-chapters" data-i18n="reader.chapters">Chapters</button>
-            <div class="chapter-nav-buttons">
-                <button type="button" id="prev-chapter-btn" class="chapter-nav-btn" aria-label="Previous chapter" title="Previous chapter" data-i18n-aria="reader.prevTitle" data-i18n-title="reader.prevTitle">
-                    <span aria-hidden="true">&#8249;</span> <span data-i18n="reader.prev">Previous</span>
-                </button>
-                <button type="button" id="next-chapter-btn" class="chapter-nav-btn" aria-label="Next chapter" title="Next chapter" data-i18n-aria="reader.nextTitle" data-i18n-title="reader.nextTitle">
-                    <span data-i18n="reader.next">Next</span> <span aria-hidden="true">&#8250;</span>
-                </button>
+        @if (!Model.IsPdf)
+        {
+            <div class="sidebar-section">
+                <button type="button" class="sidebar-toggle" data-panel="panel-chapters" data-i18n="reader.chapters">Chapters</button>
+                <div class="chapter-nav-buttons">
+                    <button type="button" id="prev-chapter-btn" class="chapter-nav-btn" aria-label="Previous chapter" title="Previous chapter" data-i18n-aria="reader.prevTitle" data-i18n-title="reader.prevTitle">
+                        <span aria-hidden="true">&#8249;</span> <span data-i18n="reader.prev">Previous</span>
+                    </button>
+                    <button type="button" id="next-chapter-btn" class="chapter-nav-btn" aria-label="Next chapter" title="Next chapter" data-i18n-aria="reader.nextTitle" data-i18n-title="reader.nextTitle">
+                        <span data-i18n="reader.next">Next</span> <span aria-hidden="true">&#8250;</span>
+                    </button>
+                </div>
+                <ul id="panel-chapters" class="sidebar-panel sidebar-list open">
+                    @foreach (var chapter in Model.Chapters)
+                    {
+                        <li class="sidebar-list-item chapter-list-item @(chapter.Id == Model.LandingChapterId ? "active" : "")" data-chapter-id="@chapter.Id">
+                            @chapter.Title
+                        </li>
+                    }
+                </ul>
             </div>
-            <ul id="panel-chapters" class="sidebar-panel sidebar-list open">
-                @foreach (var chapter in Model.Chapters)
-                {
-                    <li class="sidebar-list-item chapter-list-item @(chapter.Id == Model.LandingChapterId ? "active" : "")" data-chapter-id="@chapter.Id">
-                        @chapter.Title
-                    </li>
-                }
-            </ul>
-        </div>
 
-        <div class="sidebar-section">
-            <button type="button" class="sidebar-toggle" data-panel="panel-bookmarks" data-i18n="reader.bookmarks">Bookmarks</button>
-            <ul id="panel-bookmarks" class="sidebar-panel sidebar-list open">
-                @foreach (var bookmark in Model.Bookmarks)
-                {
-                    <li class="sidebar-list-item bookmark-list-item" data-bookmark-id="@bookmark.Id" data-chapter-id="@bookmark.ChapterId" data-page="@bookmark.Page">
-                        @if (string.IsNullOrWhiteSpace(bookmark.PreviewText))
-                        {
-                            <span class="bookmark-preview-text" data-i18n="reader.positionLabel" data-i18n-params='{"n":@(bookmark.Page / 10)}'>Position @(bookmark.Page / 10)%</span>
-                        }
-                        else
-                        {
-                            <span class="bookmark-preview-text">@bookmark.PreviewText</span>
-                        }
-                        <button type="button" class="bookmark-delete" data-bookmark-delete-id="@bookmark.Id" aria-label="Delete bookmark">&times;</button>
-                    </li>
-                }
-                @if (Model.Bookmarks.Count == 0)
-                {
-                    <li class="sidebar-list-empty" id="bookmark-empty-hint" data-i18n="reader.bookmarkEmpty">No bookmarks yet. Press B or tap the star to save this page.</li>
-                }
-            </ul>
-        </div>
+            <div class="sidebar-section">
+                <button type="button" class="sidebar-toggle" data-panel="panel-bookmarks" data-i18n="reader.bookmarks">Bookmarks</button>
+                <ul id="panel-bookmarks" class="sidebar-panel sidebar-list open">
+                    @foreach (var bookmark in Model.Bookmarks)
+                    {
+                        <li class="sidebar-list-item bookmark-list-item" data-bookmark-id="@bookmark.Id" data-chapter-id="@bookmark.ChapterId" data-page="@bookmark.Page">
+                            @if (string.IsNullOrWhiteSpace(bookmark.PreviewText))
+                            {
+                                <span class="bookmark-preview-text" data-i18n="reader.positionLabel" data-i18n-params='{"n":@(bookmark.Page / 10)}'>Position @(bookmark.Page / 10)%</span>
+                            }
+                            else
+                            {
+                                <span class="bookmark-preview-text">@bookmark.PreviewText</span>
+                            }
+                            <button type="button" class="bookmark-delete" data-bookmark-delete-id="@bookmark.Id" aria-label="Delete bookmark">&times;</button>
+                        </li>
+                    }
+                    @if (Model.Bookmarks.Count == 0)
+                    {
+                        <li class="sidebar-list-empty" id="bookmark-empty-hint" data-i18n="reader.bookmarkEmpty">No bookmarks yet. Press B or tap the star to save this page.</li>
+                    }
+                </ul>
+            </div>
+        }
     </aside>
 
     <main id="reader-center" class="reader-center">
@@ -95,20 +98,27 @@
                         <span class="export-translation-label" data-i18n="reader.export">Export translation</span>
                     </a>
                 }
-                <button type="button" id="tts-toggle" class="tts-toggle-btn" aria-pressed="false" title="Read aloud (A)" data-i18n-title="tts.toggleTitle">
-                    <span aria-hidden="true">&#127911;</span>
-                    <span class="tts-toggle-label" data-i18n="tts.toggle">Audio</span>
-                </button>
-                <button type="button" id="bookmark-toggle-btn" class="icon-toggle-btn" aria-label="Bookmark this page" title="Bookmark this page (B)" data-i18n-aria="reader.bookmarkTitle" data-i18n-title="reader.bookmarkTitle">
-                    <span aria-hidden="true">&#9733;</span>
-                </button>
+                @if (!Model.IsPdf)
+                {
+                    <button type="button" id="tts-toggle" class="tts-toggle-btn" aria-pressed="false" title="Read aloud (A)" data-i18n-title="tts.toggleTitle">
+                        <span aria-hidden="true">&#127911;</span>
+                        <span class="tts-toggle-label" data-i18n="tts.toggle">Audio</span>
+                    </button>
+                    <button type="button" id="bookmark-toggle-btn" class="icon-toggle-btn" aria-label="Bookmark this page" title="Bookmark this page (B)" data-i18n-aria="reader.bookmarkTitle" data-i18n-title="reader.bookmarkTitle">
+                        <span aria-hidden="true">&#9733;</span>
+                    </button>
+                }
                 <button type="button" id="sidebar-right-toggle" class="icon-toggle-btn sidebar-open-btn" aria-label="Settings" data-i18n-aria="reader.settings" aria-controls="sidebar-right" aria-expanded="false">
                     <span aria-hidden="true">&#9881;</span>
                 </button>
             </div>
         </div>
 
-        @if (Model.LandingChapterId is null)
+        @if (Model.IsPdf && Model.PdfAvailable)
+        {
+            <iframe class="pdf-viewer" src="@Url.Action("Pdf", "Reader", new { id = Model.BookId })" title="@Model.Title"></iframe>
+        }
+        else if (Model.IsPdf || Model.LandingChapterId is null)
         {
             <div class="reader-empty-state">
                 <p data-i18n="reader.emptyContent">This file could not be read - it may be damaged or in an unsupported format.</p>

@@ -17,6 +17,8 @@ public class ReaderBundleViewModel
     public bool CanSaveSettings { get; set; }
     public SettingsViewModel Settings { get; set; } = new();
     public bool TranslationModeOn { get; set; }
+    public bool IsPdf { get; set; }
+    public bool PdfAvailable { get; set; }
 }
 
 public class ReaderChapterSummary

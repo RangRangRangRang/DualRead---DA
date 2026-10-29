@@ -1293,6 +1293,28 @@ body,
     padding: 12px 24px 72px;
 }
 
+    .page-track img,
+    .page-track svg,
+    .page-track video {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .page-track table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+.pdf-viewer {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
 .page-indicator {
     flex-shrink: 0;
     text-align: center;
@@ -2560,14 +2582,23 @@ body.theme-light .tts-btn-close {
 .bk-cover {
     position: absolute;
     inset: 0;
+    display: block;
 }
 
-    .bk-cover img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+.bk-grid:not(.is-list) .bk-cover {
+    pointer-events: none;
+}
+
+.is-list .bk-cover {
+    cursor: pointer;
+}
+
+.bk-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
 .bk-placeholder {
     width: 100%;
