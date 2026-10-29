@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: dualread
+    runtime: docker
+    plan: free
+    dockerfilePath: ./DualRead/Dockerfile
+    dockerContext: ./DualRead
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        sync: false
