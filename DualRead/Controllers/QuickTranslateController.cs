@@ -65,7 +65,8 @@ public class QuickTranslateController : ControllerBase
         {
             () => TranslateWithPostAsync(client, text, sl, tl, wantsDictionary),
             () => TranslateWithGetAsync(client, text, sl, tl, wantsDictionary),
-            () => TranslateWithBackupEndpointAsync(client, text, sl, tl)
+            () => TranslateWithBackupEndpointAsync(client, text, sl, tl),
+            () => TranslateWithMyMemoryAsync(client, text, sl, tl)
         };
 
         foreach (var attempt in attempts)
@@ -96,7 +97,7 @@ public class QuickTranslateController : ControllerBase
         return client;
     }
 
-    private static async Task<QuickTranslateResult?> TranslateWithPostAsync(HttpClient client, string text, string sl, string tl, bool wantsDictionary)
+    private async Task<QuickTranslateResult?> TranslateWithPostAsync(HttpClient client, string text, string sl, string tl, bool wantsDictionary)
     {
         var form = new List<KeyValuePair<string, string>>
         {
@@ -113,24 +114,24 @@ public class QuickTranslateController : ControllerBase
         }
 
         var response = await client.PostAsync(GoogleSingleUrl, new FormUrlEncodedContent(form));
-        return ParseUsableResult(await ReadBodyAsync(response), text);
+        return ParseUsableResult(await ReadBodyAsync(response, "Google Translate POST"), text);
     }
 
-    private static async Task<QuickTranslateResult?> TranslateWithGetAsync(HttpClient client, string text, string sl, string tl, bool wantsDictionary)
+    private async Task<QuickTranslateResult?> TranslateWithGetAsync(HttpClient client, string text, string sl, string tl, bool wantsDictionary)
     {
         var dictionaryPart = wantsDictionary ? "&dt=bd" : string.Empty;
         var url = $"{GoogleSingleUrl}?client=gtx&sl={sl}&tl={tl}&dt=t{dictionaryPart}&q={Uri.EscapeDataString(text)}";
 
         var response = await client.GetAsync(url);
-        return ParseUsableResult(await ReadBodyAsync(response), text);
+        return ParseUsableResult(await ReadBodyAsync(response, "Google Translate GET"), text);
     }
 
-    private static async Task<QuickTranslateResult?> TranslateWithBackupEndpointAsync(HttpClient client, string text, string sl, string tl)
+    private async Task<QuickTranslateResult?> TranslateWithBackupEndpointAsync(HttpClient client, string text, string sl, string tl)
     {
         var url = $"https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={sl}&tl={tl}&q={Uri.EscapeDataString(text)}";
 
         var response = await client.GetAsync(url);
-        var json = await ReadBodyAsync(response);
+        var json = await ReadBodyAsync(response, "Google Translate backup");
         if (json is null)
         {
             return null;
@@ -152,9 +153,58 @@ public class QuickTranslateController : ControllerBase
         return new QuickTranslateResult { OriginalText = text, TranslatedText = translated };
     }
 
-    private static async Task<string?> ReadBodyAsync(HttpResponseMessage response)
+    private async Task<QuickTranslateResult?> TranslateWithMyMemoryAsync(HttpClient client, string text, string sl, string tl)
     {
-        return response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync() : null;
+        var sourceLanguage = sl == "auto" ? "autodetect" : sl;
+        var url = $"https://api.mymemory.translated.net/get?q={Uri.EscapeDataString(text)}&langpair={Uri.EscapeDataString(sourceLanguage + "|" + tl)}";
+
+        var response = await client.GetAsync(url);
+        var json = await ReadBodyAsync(response, "MyMemory");
+        if (json is null)
+        {
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("responseStatus", out var responseStatus)
+            || responseStatus.ValueKind != JsonValueKind.Number
+            || responseStatus.GetInt32() != 200
+            || !root.TryGetProperty("responseData", out var responseData)
+            || responseData.ValueKind != JsonValueKind.Object
+            || !responseData.TryGetProperty("translatedText", out var translatedTextElement))
+        {
+            return null;
+        }
+
+        if (translatedTextElement.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var translatedText = translatedTextElement.GetString();
+        if (string.IsNullOrWhiteSpace(translatedText))
+        {
+            return null;
+        }
+
+        return new QuickTranslateResult
+        {
+            OriginalText = text,
+            TranslatedText = System.Net.WebUtility.HtmlDecode(translatedText)
+        };
+    }
+
+    private async Task<string?> ReadBodyAsync(HttpResponseMessage response, string provider)
+    {
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("{TranslationProvider} returned HTTP {StatusCode}.", provider, (int)response.StatusCode);
+            return null;
+        }
+
+        return await response.Content.ReadAsStringAsync();
     }
 
     private static QuickTranslateResult? ParseUsableResult(string? json, string original)
