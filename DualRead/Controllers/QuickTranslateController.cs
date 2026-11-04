@@ -155,7 +155,7 @@ public class QuickTranslateController : ControllerBase
 
     private async Task<QuickTranslateResult?> TranslateWithMyMemoryAsync(HttpClient client, string text, string sl, string tl)
     {
-        var sourceLanguage = sl == "auto" ? "autodetect" : sl;
+        var sourceLanguage = sl == "auto" ? "en" : sl;
         var url = $"https://api.mymemory.translated.net/get?q={Uri.EscapeDataString(text)}&langpair={Uri.EscapeDataString(sourceLanguage + "|" + tl)}";
 
         var response = await client.GetAsync(url);
@@ -200,7 +200,8 @@ public class QuickTranslateController : ControllerBase
     {
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("{TranslationProvider} returned HTTP {StatusCode}.", provider, (int)response.StatusCode);
+            var snippet = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("{TranslationProvider} returned HTTP {StatusCode}: {Body}", provider, (int)response.StatusCode, snippet.Length > 200 ? snippet[..200] : snippet);
             return null;
         }
 

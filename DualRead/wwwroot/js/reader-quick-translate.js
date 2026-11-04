@@ -102,10 +102,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         popover.querySelector('.quick-trans-close-btn').addEventListener('click', hideAll);
 
-        fetch('/api/translate?text=' + encodeURIComponent(currentSelectionText) + '&sl=auto&tl=vi')
+        var textToTranslate = currentSelectionText;
+        fetch('/api/translate?text=' + encodeURIComponent(textToTranslate) + '&sl=auto&tl=vi')
             .then(function (res) {
                 if (!res.ok) throw new Error('Translate failed');
                 return res.json();
+            })
+            .catch(function () {
+                // Server (Render) bi Google chan IP -> goi truc tiep tu trinh duyet cua nguoi dung
+                return translateInBrowser(textToTranslate);
             })
             .then(function (data) {
                 renderResult(data);
@@ -116,6 +121,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<p class="quick-trans-result">' + t('qt.error') + '</p>';
             });
     });
+
+    function translateInBrowser(text) {
+        var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=vi&dt=t&q=' +
+            encodeURIComponent(text);
+        return fetch(url)
+            .then(function (res) {
+                if (!res.ok) throw new Error('Browser translate failed');
+                return res.json();
+            })
+            .then(function (json) {
+                var parts = (json && json[0]) || [];
+                var translated = parts.map(function (p) { return p && p[0] ? p[0] : ''; }).join('').trim();
+                if (!translated) throw new Error('Empty translation');
+                return { originalText: text, translatedText: translated, dict: [] };
+            });
+    }
 
     function renderResult(data) {
         var dictHtml = '';
