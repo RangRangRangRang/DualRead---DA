@@ -143,7 +143,7 @@ public class QuickTranslateController : ControllerBase
             return null;
         }
 
-        var translated = root[0].GetString();
+        var translated = ExtractTranslatedFragment(root[0]);
         if (string.IsNullOrWhiteSpace(translated))
         {
             return null;
@@ -190,17 +190,48 @@ public class QuickTranslateController : ControllerBase
 
     private static string ReadTranslatedText(JsonElement root)
     {
-        var text = new StringBuilder();
+        var fragments = new List<string>();
 
         foreach (var sentence in ChildrenAt(root, 0))
         {
-            if (sentence.ValueKind == JsonValueKind.Array && sentence.GetArrayLength() > 0)
+            if (sentence.ValueKind != JsonValueKind.Array)
             {
-                text.Append(sentence[0].GetString());
+                continue;
+            }
+
+            var translated = ExtractTranslatedFragment(sentence);
+            if (!string.IsNullOrWhiteSpace(translated))
+            {
+                fragments.Add(translated.Trim());
             }
         }
 
-        return text.ToString().Trim();
+        return string.Join(" ", fragments).Trim();
+    }
+
+    private static string? ExtractTranslatedFragment(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            var text = element.GetString();
+            return string.IsNullOrWhiteSpace(text) ? null : text;
+        }
+
+        if (element.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (var child in element.EnumerateArray())
+        {
+            var translated = ExtractTranslatedFragment(child);
+            if (!string.IsNullOrWhiteSpace(translated))
+            {
+                return translated;
+            }
+        }
+
+        return null;
     }
 
     private static List<DictionaryEntry> ReadDictionary(JsonElement root)
